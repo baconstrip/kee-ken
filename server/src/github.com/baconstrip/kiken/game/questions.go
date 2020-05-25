@@ -132,6 +132,8 @@ func parseCategory(q map[string]interface{}) (string, error) {
         return cat.(string), nil
     case int:
         return strconv.Itoa(cat.(int)), nil
+    case float64:
+        return strconv.FormatFloat(cat.(float64), 'f', 6, 64), nil
     default:
         return "", fmt.Errorf("bad type parsing category, got %v, expected string", t)
     }
@@ -160,10 +162,12 @@ func parseValue(q map[string]interface{}) (int, error) {
         return i, nil
     case int:
         return val.(int), nil
+    case float64:
+        return int(val.(float64)), nil
     case nil:
         return 0, nil
     default:
-        return -1, fmt.Errorf("bad type parsing value, got %v, expected string or int", t)
+        return -1, fmt.Errorf("bad type parsing value, got %T, expected string or int", t)
     }
 }
 
@@ -177,8 +181,10 @@ func parseQuestion(q map[string]interface{}) (string, error) {
         return ques.(string), nil
     case int:
         return strconv.Itoa(ques.(int)), nil
+    case float64:
+        return strconv.FormatFloat(cat.(float64), 'f', 6, 64), nil
     default:
-        return "", fmt.Errorf("bad type parsing question, got %v, expected string", t)
+        return "", fmt.Errorf("bad type parsing question, got %T, expected string", t)
     }
 }
 
@@ -192,8 +198,10 @@ func parseAnswer(q map[string]interface{}) (string, error) {
         return ans.(string), nil
     case int:
         return strconv.Itoa(ans.(int)), nil
+    case float64:
+        return strconv.FormatFloat(cat.(float64), 'f', 6, 64), nil
     default:
-        return "", fmt.Errorf("bad type parsing answer, got %v, expected string", t)
+        return "", fmt.Errorf("bad type parsing answer, got %T, expected string", t)
     }
 }
 
@@ -204,7 +212,7 @@ func parseRound(q map[string]interface{}) (Round, error) {
     round := q["round"]
     switch t := round.(type) {
     case string:
-        r := strings.ToLower(round.(string))
+        r := strings.TrimSpace(strings.ToLower(round.(string)))
         if strings.HasPrefix(r, "j") {
             return ICHIBAN, nil
         }
@@ -214,12 +222,23 @@ func parseRound(q map[string]interface{}) (Round, error) {
         if strings.HasPrefix(r, "f") {
             return OWARI, nil
         }
+        if r == "ichiban" {
+            return ICHIBAN, nil
+        }
+        if r == "niban" {
+            return NIBAN, nil
+        }
+        if r == "owari" {
+            return OWARI, nil
+        }
         if strings.HasPrefix(r, "tiebreaker") {
             return TIEBREAKER, nil
         }
         return UNKNOWN, nil
     case int:
         return (Round)(round.(int)), nil
+    case float64:
+        return (Round)(int(round.(float64))), nil
     default:
         return UNKNOWN, fmt.Errorf("bad type reading round, should be a word representing the round, %v", t)
     }
@@ -235,7 +254,9 @@ func parseShowing(q map[string]interface{}) (int, error) {
         return strconv.Atoi(show.(string))
     case int:
         return show.(int), nil
+    case float64:
+        return int(show.(float64)), nil
     default:
-        return -1, fmt.Errorf("bad type parsing showing, got %v, expected number", t)
+        return -1, fmt.Errorf("bad type parsing showing, got %T, expected number", t)
     }
 }

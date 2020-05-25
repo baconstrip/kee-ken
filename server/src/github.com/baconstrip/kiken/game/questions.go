@@ -182,7 +182,7 @@ func parseQuestion(q map[string]interface{}) (string, error) {
     case int:
         return strconv.Itoa(ques.(int)), nil
     case float64:
-        return strconv.FormatFloat(cat.(float64), 'f', 6, 64), nil
+        return strconv.FormatFloat(ques.(float64), 'f', 6, 64), nil
     default:
         return "", fmt.Errorf("bad type parsing question, got %T, expected string", t)
     }
@@ -199,7 +199,7 @@ func parseAnswer(q map[string]interface{}) (string, error) {
     case int:
         return strconv.Itoa(ans.(int)), nil
     case float64:
-        return strconv.FormatFloat(cat.(float64), 'f', 6, 64), nil
+        return strconv.FormatFloat(ans.(float64), 'f', 6, 64), nil
     default:
         return "", fmt.Errorf("bad type parsing answer, got %T, expected string", t)
     }

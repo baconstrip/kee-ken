@@ -4,12 +4,9 @@ import (
     "flag"
     "log"
     "os"
-    "strconv"
-    "path/filepath"
-    "net/http"
-    "html/template"
 
     "github.com/baconstrip/kiken/game"
+    "github.com/baconstrip/kiken/server"
 )
 
 var (
@@ -18,17 +15,6 @@ var (
     flagPort = flag.Int("port", 1986, "Port for the server to listen on")
     flagQuestionsList = flag.String("question-list", "", "Path to list of questions, must be set")
 )
-
-type templateGroup struct {
-    index *template.Template
-}
-
-func (t templateGroup) indexHandler(w http.ResponseWriter, r *http.Request) {
-    err := t.index.Execute(w, nil)
-    if err != nil {
-        log.Printf("Error loading index page: %v", err)
-    }
-}
 
 func main() {
     flag.Parse()
@@ -46,13 +32,8 @@ func main() {
     log.Printf("Finished loading questions")
     _ = q
 
-    tg := templateGroup{}
-    tg.index = template.Must(template.ParseFiles(filepath.Join(*flagTemplatesPath, "index.html")))
-
-    mux := http.NewServeMux()
-    mux.HandleFunc("/", tg.indexHandler)
-    mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(*flagStaticPath))))
-
     log.Printf("Starting Kiken server on port %v", *flagPort)
-    log.Fatal(http.ListenAndServe(":" + strconv.Itoa(*flagPort), mux))
+    s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPort)
+
+    log.Fatal(s.ListenAndServe())
 }

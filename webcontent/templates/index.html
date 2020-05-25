@@ -17,9 +17,12 @@
 <body>
 
   <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light static-top">
     <div class="container">
-      <a class="navbar-brand" href="#">Kiken</a>
+      <a class="navbar-brand" href="#">
+        <img src="/static/img/kiken_writing.png" height=70 class="pr-3">
+        Kiken
+      </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -42,14 +45,28 @@
         <h1 class="mt-5">Kiken Trivia System</h1>
         <p class="lead">Free trivia for all</p>
         <hr>
-        <button type="button" class="btn btn-large btn-success">Join Game</button>
+        <div id="app">
+          <button type="button" class="btn btn-large btn-success" id="join-button" @click="join()">Launch Client</button>
+          <div class="row" id="server-area" syle="background-color:white" v-if="serverContent">
+            <div class="container col-lg-6" id="server-area">
+              <div class="jumbotron">
+              <span v-html="serverContent"></span>
+              </div>
+            </div>
+          </div>
+          <div class="alert alert-warning" role="alert" v-if="errorMessages">
+            <span v-html="errorMessages"></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Bootstrap core JavaScript -->
+  <script src="static/js/vue/vue.js"></script>
   <script src="static/js/jquery/jquery.slim.min.js"></script>
   <script src="static/js/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="static/js/apps/client.js"></script>
 
 </body>
 

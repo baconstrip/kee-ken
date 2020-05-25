@@ -46,5 +46,5 @@ tags
 # Coc configuration directory
 .vim
 
-
-server/**/kiken
+server/src/github.com/baconstrip/kiken/kiken
+server/bin/**

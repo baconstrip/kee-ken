@@ -26,7 +26,8 @@ new Vue({
             };
             this.ws.onmessage = function(e) {
                 var msg = JSON.parse(e.data)
-                baseVue.serverContent += msg['Test']
+                console.log(msg)
+                baseVue.serverContent += msg
             };
             this.ws.onerror = function(e) {
                 $("#join-button").removeClass("d-none");

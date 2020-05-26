@@ -22,8 +22,6 @@ const (
     TIEBREAKER
 )
 
-type Questions struct {}
-
 type Question struct {
     Category string
     Value int
@@ -33,9 +31,22 @@ type Question struct {
     Showing int
 }
 
+type Category struct {
+    Name string
+    Round Round
+    Questions []*Question
+}
+
+// ByValue implements a type that allows sorting Questions by their value.
+type ByValue []*Question
+
+func (b ByValue) Len() int { return len(b) }
+func (b ByValue) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b ByValue) Less(i, j int) bool { return b[i].Value < b[j].Value }
+
 // LoadQuestsions reads the contents of the file at path as JSON and
 // tries to interpret it as question data.
-func LoadQuestions(path string) (*Questions, error) {
+func LoadQuestions(path string) ([]*Question, error) {
     contents, err := ioutil.ReadFile(path)
     if err != nil {
         return nil, err
@@ -50,10 +61,153 @@ func LoadQuestions(path string) (*Questions, error) {
     if err != nil {
         return nil, fmt.Errorf("error decoding question data: %v", err)
     }
-    _ = questions
-    return nil, nil
+    return questions, nil
 }
 
+// inferValue computes the value of a question to match standard values, in the
+// case that there questions with abnormal values. Modifies the questions in
+// place. Errors if it is unable to determine values for the category. In the 
+// case two questions have the same value, a random one is changed.
+func inferValue(cat *Category) error {
+    // TODO come back to this, it's broken
+    if len(cat.Questions) != 5 {
+        return fmt.Errorf("can only infer values when a category has exactly 5 questions, got %v", len(cat.Questions))
+    }
+
+    buckets := make(map[int][]*Question)
+    for _, q := range cat.Questions{
+        buckets[q.Value] = append(buckets[q.Value], q)
+    }
+
+    var outlier *Question
+    var dupe []*Question
+    for _, questions := range buckets {
+        if len(questions) > 2 {
+            return fmt.Errorf("categories values cannot be inferred, to many questions outlier")
+        }
+        if len(questions) == 2 {
+            dupe = questions
+        }
+    }
+
+    if dupe != nil {
+        dedupe := dupe[1]
+
+        buckets[dupe[0].Value] = []*Question{dedupe}
+        outlier = dupe[0]
+    }
+
+    var possibleValues []int
+    // TODO support non-standard values via configuration.
+    if cat.Questions[0].Round == ICHIBAN {
+        possibleValues = []int{200, 400, 600, 800, 1000}
+    } else if cat.Questions[0].Round == NIBAN {
+        possibleValues = []int{400, 800, 1200, 1600, 2000}
+    } else {
+        return fmt.Errorf("can only be used on standard questions")
+    }
+
+    foundValues := []bool{false, false, false, false, false}
+    if outlier == nil {
+        invalidValue := 0
+        for val, _ := range buckets {
+            found := false
+            for i, v := range possibleValues {
+                if val == v {
+                    found = true
+                    foundValues[i] = true
+                    break
+                }
+            }
+
+            if !found {
+                if invalidValue != 0 {
+                    return fmt.Errorf("too many outliers, cannot infer values, buckets: %v, round %v", buckets, buckets[val][0].Round)
+                }
+                invalidValue = val
+            }
+        }
+
+        allPresent := true
+        for _, found := range foundValues {
+            if !found {
+                allPresent = false
+                break
+            }
+        }
+        if allPresent {
+            return nil
+        }
+        outlier = buckets[invalidValue][0]
+        log.Println("buckets: %+v, invalidValue: %v", buckets, invalidValue)
+    }
+
+
+    for i, found := range foundValues {
+        if !found {
+            outlier.Value = possibleValues[i]
+        }
+    }
+    return nil
+}
+
+// CollateFullCategories groups questions first based on category, then cheks
+// that there are exactly 5 questions available. It will ignore any categories
+// that don't have 5 questions, after filtering for questions that are played
+// in normal play (not tiebreakers nor Owari).
+func CollateFullCategories(questions []*Question) ([]*Category, error) {
+    var filteredQuestions []*Question
+    for _, q := range questions {
+        if q.Round == ICHIBAN || q.Round == NIBAN {
+            filteredQuestions = append(filteredQuestions, q)
+        }
+    }
+
+    categoryGroups := make(map[string][]*Question)
+    for _, q := range filteredQuestions {
+        categoryGroups[q.Category] = append(categoryGroups[q.Category], q)
+    }
+
+    filteredCategories := make(map[string][]*Question)
+
+    for cat, q := range categoryGroups {
+        if len(q) == 5 {
+            filteredCategories[cat] = q
+        }
+    }
+    log.Printf("Filtered for categories that contain 5 questions, discarded %v categories", len(categoryGroups)-len(filteredCategories))
+
+    var categories []*Category
+    for cat, q := range filteredCategories {
+        categories = append(categories, &Category{Name: cat, Round: q[0].Round, Questions: q})
+    }
+
+    // Removed while the value inferring capabillity is sitll broken.
+    //for _, cat := range categories {
+    //    err := inferValue(cat)
+    //    if err != nil {
+    //        log.Printf("failed to infer value for category %v, %v", cat.Name, err)
+    //    }
+    //}
+    return categories, nil
+}
+
+// CollateLoneQuestions collects questions for the final rounds of play.
+func CollateLoneQuestions(questions []*Question, r Round) []*Category {
+    var filteredQuestions []*Question
+    for _, q := range questions {
+        if q.Round == r {
+            filteredQuestions = append(filteredQuestions, q)
+        }
+    }
+
+    var categories []*Category
+    for _, q := range filteredQuestions {
+        categories = append(categories, &Category{Name: q.Category, Round: r, Questions: []*Question{q}})
+    }
+
+    return categories
+}
 
 func decodeQuestions(i *interface{}) ([]*Question, error) {
     var retVal []*Question

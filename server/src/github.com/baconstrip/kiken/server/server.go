@@ -2,7 +2,6 @@ package server
 
 import (
     "log"
-    "time"
     "strconv"
     "net/http"
     "html/template"
@@ -10,12 +9,15 @@ import (
     "encoding/json"
 
     "golang.org/x/net/websocket"
+    "github.com/baconstrip/kiken/game"
 )
 
 type Server struct {
     index *template.Template
     mux *http.ServeMux
     port int
+    passcode string
+    ga *game.Game
 }
 
 type playerMessage struct {
@@ -38,25 +40,7 @@ func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
         }
 
         log.Printf("From the client: %v", response)
-        message := &playerMessage{Test: "hello client"}
-        out, err := json.Marshal(message)
-        if err != nil {
-            log.Printf("Error marshaling player message: %v", err)
-        }
-        log.Printf("sending: %v", string(out))
-        if err := websocket.Message.Send(ws, string(out)); err != nil{
-            log.Printf("Connection broken: %v", err)
-            break
-        }
-        go spam(ws)
-    }
-}
-
-func spam(ws *websocket.Conn) {
-    for {
-        time.Sleep(time.Second)
-        message := &playerMessage{Test: "hello client"}
-        out, err := json.Marshal(message)
+        out, err := json.Marshal(s.ga.Boards[0])
         if err != nil {
             log.Printf("Error marshaling player message: %v", err)
         }
@@ -68,9 +52,11 @@ func spam(ws *websocket.Conn) {
     }
 }
 
-func New(templatePath string, staticPath string, port int) *Server {
+func New(templatePath, staticPath, passcode string, port int, g *game.Game) *Server {
     server := &Server{
         port: port,
+        passcode: passcode,
+        ga: g,
     }
     server.index = template.Must(template.ParseFiles(filepath.Join(templatePath, "index.html")))
 

@@ -29,9 +29,7 @@
       <div class="collapse navbar-collapse" id="navbarResponsive">
         <ul class="navbar-nav ml-auto">
           <li class="nav-item active">
-            <a class="nav-link" href="#">Home
-              <span class="sr-only">(current)</span>
-            </a>
+            <a class="nav-link" href="#">Home</a>
           </li>
         </ul>
       </div>
@@ -46,7 +44,9 @@
         <p class="lead">Free trivia for all</p>
         <hr>
         <div id="app">
-          <button type="button" class="btn btn-large btn-success" id="join-button" @click="join()">Launch Client</button>
+          <button type="button" class="btn btn-large btn-info" id="join-button" @click="join()">Launch Client</button>
+          <!--<button type="button" class="btn btn-large btn-disabled" id="join-button">Spectate</button> -->
+          <button type="button" class="btn btn-large btn-danger ml-5" id="join-button" @click="join()">Become Host</button>
           <div class="row" id="server-area" syle="background-color:white" v-if="serverContent">
             <div class="container col-lg-6" id="server-area">
               <div class="jumbotron">

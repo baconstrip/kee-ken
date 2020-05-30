@@ -3,7 +3,7 @@
 // directory only.
 package message
 
-// BoardOverview defines a message that the server sendsa to clients
+// BoardOverview defines a message that the server sends to clients
 // representing the board without exposing question information.
 type BoardOverview struct {
     Round string

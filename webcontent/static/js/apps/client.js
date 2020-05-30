@@ -4,7 +4,7 @@ gameTemplate = `<div id="app" class="container">
 </div>
 <gameboard v-if="ws" v-bind:board="board">
 </gameboard>
-<auth-window v-on:auth-ready="join()">
+<auth-window v-on:auth-ready="join()" v-if="!joined">
 </auth-window>
 </div>`
 
@@ -33,6 +33,8 @@ new Vue({
                         test: "message",
                     })
                 );
+                baseVue.joined = true;
+                errorMessages = "";
             };
             this.ws.onmessage = function(e) {
                 var msg = JSON.parse(e.data)

@@ -4,7 +4,7 @@ gameTemplate = `<div id="app" class="container">
 </div>
 <gameboard v-if="ws" v-bind:board="board">
 </gameboard>
-<auth-window v-on:auth-ready="join()">
+<auth-window host="true" v-on:auth-ready="join()">
 </auth-window>
 </div>`
 
@@ -20,12 +20,14 @@ new Vue({
         errorMessages: '',
         board: ''
     },
+    template: gameTemplate,
     methods: {
         send: function () {
         },
         join: function() {
+            
+
             var baseVue = this;
-            $("#join-button").addClass("d-none");
             this.ws = new WebSocket('ws://' + window.location.host + '/player_game');
             this.ws.onopen = function(e) {
                 baseVue.ws.send(
@@ -47,6 +49,5 @@ new Vue({
             };
         }
     },
-    template: gameTemplate,
 });
 

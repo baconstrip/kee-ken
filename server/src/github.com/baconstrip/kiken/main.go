@@ -75,11 +75,10 @@ func main() {
     log.Printf("creating stateful game")
 
     gState := g.CreateState()
-    _ = gState
  //   pretty.Print(gState)
 
     log.Printf("Starting Kiken server on port %v", *flagPort)
-    s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, g)
+    s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, gState)
 
     log.Fatal(s.ListenAndServe())
 }

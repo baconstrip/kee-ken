@@ -3,7 +3,7 @@
 // directory only.
 package message
 
-// BoardOverview defines a message that the server sends to clients
+// BoardOverview defines a message that the server sendsa to clients
 // representing the board without exposing question information.
 type BoardOverview struct {
     Round string
@@ -22,4 +22,22 @@ type CategoryOverview struct {
 type QuestionHidden struct {
     Value int
     Played bool
+}
+
+// AuthInfo defines a message that the client sends to the server to provide
+// authentication information.
+type AuthInfo struct {
+    Name string
+    ServerPasscode string
+    Passcode string
+    Host bool
+}
+
+type AuthSuccess struct {
+    Msg string
+}
+
+type ServerError struct {
+    Error string
+    Code int
 }

@@ -9,6 +9,7 @@ const (
     STATUS_PRESTART
     STATUS_PREPARING
     STATUS_SHOWING_BOARD
+    STATUS_PRESENTING_QUESTION // Question is being read.
 )
 
 type Round int
@@ -67,6 +68,22 @@ func (g *GameState) CurrentBoard() *BoardState {
         return nil
     }
     return g.Boards[int(g.currentRound) - 1]
+}
+
+func (g *GameState) FindQuestion(id string) *QuestionState {
+    g.mu.RLock()
+    defer g.mu.RUnlock()
+
+    for _, b := range g.Boards {
+        for _, c := range b.Categories {
+            for _, q := range c.Questions {
+                if q.data.ID == id {
+                    return q
+                }
+            }
+        }
+    }
+    return nil
 }
 
 func (b *Board) state() *BoardState {

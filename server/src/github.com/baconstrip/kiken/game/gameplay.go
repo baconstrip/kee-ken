@@ -2,8 +2,10 @@ package game
 
 import (
     "time"
+    "log"
 
     "github.com/baconstrip/kiken/server"
+    "github.com/baconstrip/kiken/message"
 )
 
 // GameDriver is the main object that manages a game.
@@ -30,7 +32,29 @@ func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
 }
 
 func (g *GameDriver) OnSelectQuestionMessageShowQuestion(name string, host bool, msg message.ClientMessage) error {
-   return  nil
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+    if !host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_SHOWING_BOARD {
+        return nil
+    }
+
+    sel := msg.Data.(*message.SelectQuestion)
+
+    q := g.gameState.FindQuestion(sel.ID)
+    if q == nil {
+        e := server.EncodeServerMessage(message.ServerError{Error: "Bad question", Code: 2000})
+        g.server.MessagePlayer(e, name)
+        log.Printf("Bad question from client: %v", sel.ID)
+        return nil
+    }
+    prompt := q.Snapshot().ToQuestionPrompt()
+    g.server.MessageAll(server.EncodeServerMessage(prompt))
+    g.gameState.currentStatus = STATUS_PRESENTING_QUESTION
+    return nil
 }
 
 func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager) *GameDriver {
@@ -41,6 +65,7 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager) 
     }
 
     lm.RegisterJoin(g.OnJoinSendBoard)
+    lm.RegisterMessage("SelectQuestion", g.OnSelectQuestionMessageShowQuestion)
     return g
 }
 

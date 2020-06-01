@@ -44,11 +44,14 @@ Vue.component('gameboard', {
     },
     methods: {
         select: function (e) {
+            if (!this.host) {
+                return;
+            }
             var elem = e.srcElement;
             if (elem.tagName == "SPAN") {
                 elem = elem.parentElement;
             }
-            console.log(elem);
+            console.log(elem.attributes["qid"]);
         }
     },
 });

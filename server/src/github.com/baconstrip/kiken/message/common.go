@@ -19,6 +19,9 @@ type ServerMessage struct {
     Data interface{}
 }
 
+
+// ------- BEGIN SERVER MESSAGES --------
+
 // BoardOverview defines a message that the server sends to clients
 // representing the board without exposing question information.
 type BoardOverview struct {
@@ -41,6 +44,8 @@ type QuestionHidden struct {
     ID string
 }
 
+// QuestionPrompt defines a message that the server sends to clients
+// to request that question be shown to clients.
 type QuestionPrompt struct {
     Question string
     Value int
@@ -54,6 +59,18 @@ type PlayerAdded struct {
     Money int
 }
 
+// ServerError is sent to the client when the server fails to handle a request.
+type ServerError struct {
+    Error string
+    Code int
+}
+
+type AuthSuccess struct {
+    Msg string
+}
+
+// ------- BEGIN CLIENT MESSAGES --------
+
 // AuthInfo defines a message that the client sends to the server to provide
 // authentication information.
 type AuthInfo struct {
@@ -63,13 +80,10 @@ type AuthInfo struct {
     Host bool
 }
 
-type AuthSuccess struct {
-    Msg string
-}
-
-type ServerError struct {
-    Error string
-    Code int
+// SelectQuestion is a message that the clients sends to indicate the question
+// with ID should be the next question played.
+type SelectQuestion struct {
+    ID string
 }
 
 type ClientTestMessage struct {

@@ -2,7 +2,7 @@ gameTemplate = `<div id="app" class="container">
 <div class="alert alert-warning" role="alert" v-if="errorMessages">
   <span v-html="errorMessages"></span>
 </div>
-<gameboard v-if="ws" v-bind:board="board">
+<gameboard v-if="ws" v-bind:board="board" v-bind:host="host">
 </gameboard>
 <questionWindow v-bind:question="question" v-bind:host="host">
 </questionWindow>

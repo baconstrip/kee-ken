@@ -4,3 +4,6 @@
 [submodule "server/src/github.com/kr/pretty"]
 	path = server/src/github.com/kr/pretty
 	url = https://github.com/kr/pretty
+[submodule "server/src/github.com/kr/text"]
+	path = server/src/github.com/kr/text
+	url = https://github.com/kr/text

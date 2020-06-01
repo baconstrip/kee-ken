@@ -183,6 +183,20 @@ func (s *SessionManager) messagePlayers(msg message.ServerMessage) {
     }
 }
 
+// messagePlayer schedules a message to be sent asynchronously to a single
+// player, whose name is given.
+func (s *SessionManager) messagePlayer(msg message.ServerMessage, name string) {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+
+    for id, _ := range s.connections {
+        if s.sessions[id].name == name {
+            s.writeMessage(id, msg)
+            return
+        }
+    }
+}
+
 func (s *SessionManager) userExists(name string, caseInsensitive bool) bool {
     s.mu.RLock()
     defer s.mu.RUnlock()

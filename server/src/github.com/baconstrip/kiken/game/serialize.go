@@ -9,6 +9,7 @@ func (q *QuestionStateSnapshot) ToQuestionHidden() *message.QuestionHidden {
     return &message.QuestionHidden{
         Value: q.Value,
         Played: q.Played,
+        ID: q.ID,
     }
 }
 
@@ -38,5 +39,6 @@ func (q *QuestionStateSnapshot) ToQuestionPrompt() *message.QuestionPrompt {
     return &message.QuestionPrompt{
         Question: q.Question,
         Value: q.Value,
+        ID: q.ID,
     }
 }

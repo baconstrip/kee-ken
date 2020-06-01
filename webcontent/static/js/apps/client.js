@@ -4,7 +4,7 @@ gameTemplate = `<div id="app" class="container">
 </div>
 <gameboard v-if="ws" v-bind:board="board">
 </gameboard>
-<questionWindow v-bind:question="question">
+<questionWindow v-bind:question="question" v-bind:host="host">
 </questionWindow>
 <auth-window v-bind:host="host" v-on:auth-ready="join()" v-if="!joined">
 </auth-window>

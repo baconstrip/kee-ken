@@ -6,21 +6,13 @@ import (
     "strconv"
     "strings"
     "regexp"
+    "encoding/base64"
+    "crypto/sha512"
     "encoding/json"
     "io/ioutil"
 )
 
 var valueRegexp = regexp.MustCompile("^[$]?([0-9,]*)$|^[Nn][Oo][Nn][Ee]$|^$")
-
-type Round int
-
-const (
-    UNKNOWN Round = iota
-    ICHIBAN
-    NIBAN
-    OWARI
-    TIEBREAKER
-)
 
 type Question struct {
     Category string
@@ -29,6 +21,10 @@ type Question struct {
     Answer string
     Round Round
     Showing int
+
+    // ID contains the base64 encoded SHA512 encoding of the question 
+    // text+category, used to uniquely identify the question.
+    ID string
 }
 
 type Category struct {
@@ -262,6 +258,10 @@ func decodeQuestions(i *interface{}) ([]*Question, error) {
             continue
         }
 
+        hasher := sha512.New()
+        hasher.Write([]byte(prompt+category))
+        sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+
         question := &Question{
             Category: category,
             Value: value,
@@ -269,6 +269,8 @@ func decodeQuestions(i *interface{}) ([]*Question, error) {
             Answer: answer,
             Round: round,
             Showing: showing,
+
+            ID: sha,
         }
 
         retVal = append(retVal, question)

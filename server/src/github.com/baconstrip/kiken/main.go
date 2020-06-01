@@ -76,12 +76,14 @@ func main() {
 
     gState := g.CreateState()
  //   pretty.Print(gState)
-    _ = gState
 
     lm := server.NewListenerManager()
 
     log.Printf("Starting Kiken server on port %v", *flagPort)
     s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, lm)
+
+    driver := game.NewGameDriver(s, gState, lm)
+    go driver.Run()
 
     log.Fatal(s.ListenAndServe())
 }

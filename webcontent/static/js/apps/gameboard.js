@@ -10,7 +10,7 @@ gameboardTemplate = `<div class="row">
             </th>
           </tr>
           <tr v-for="row in rows">
-            <td v-for="question in row">
+            <td v-for="question in row" @click="select" v-bind:qid="question.ID">
               <span v-if="!question.Played">{{ question.Value }}</span>
             </td>
           </tr>
@@ -25,7 +25,7 @@ gameboardTemplate = `<div class="row">
 
 Vue.component('gameboard', {
     // board is the JSON representation of message.BoardOverview
-    props: ['board'],
+    props: ['board', 'host'],
     data: function () {
         return {
             // rows are the rows of questions.
@@ -41,5 +41,14 @@ Vue.component('gameboard', {
             [...Array(5).keys()].forEach(i => 
                 this.rows[i] = [...Array(5).keys()].map(j => newVal.Categories[j].Questions[i]));
         },
+    },
+    methods: {
+        select: function (e) {
+            var elem = e.srcElement;
+            if (elem.tagName == "SPAN") {
+                elem = elem.parentElement;
+            }
+            console.log(elem);
+        }
     },
 });

@@ -38,11 +38,13 @@ type CategoryOverview struct {
 type QuestionHidden struct {
     Value int
     Played bool
+    ID string
 }
 
 type QuestionPrompt struct {
     Question string
     Value int
+    ID string
 }
 
 // PlayerAdded is a message sent by the server when a player joins the game

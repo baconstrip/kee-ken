@@ -1,5 +1,7 @@
 package game
 
+import "sync"
+
 type Status int
 
 const (
@@ -7,6 +9,16 @@ const (
     STATUS_PRESTART
     STATUS_PREPARING
     STATUS_SHOWING_BOARD
+)
+
+type Round int
+
+const (
+    UNKNOWN Round = iota
+    ICHIBAN
+    NIBAN
+    OWARI
+    TIEBREAKER
 )
 
 // CreateState is called once a Game struct is completed, and attaches state
@@ -25,8 +37,10 @@ func (g *Game) CreateState() *GameState {
 }
 
 // GameState represents a game in progress with stateful data. Member "data"
-// should never be modified.
+// should never be modified. mu should be locked before changing anything in
+// the game's state.
 type GameState struct {
+    mu sync.RWMutex
     data *Game
 
     Boards []*BoardState
@@ -46,6 +60,13 @@ func (g *GameState) Snapshot() *GameStateSnapshot {
         CurrentStatus: g.currentStatus,
         Boards: bsnaps,
     }
+}
+
+func (g *GameState) CurrentBoard() *BoardState {
+    if g.currentRound == UNKNOWN {
+        return nil
+    }
+    return g.Boards[int(g.currentRound) - 1]
 }
 
 func (b *Board) state() *BoardState {
@@ -137,6 +158,8 @@ func (q *QuestionState) Snapshot() *QuestionStateSnapshot {
         Round: q.data.Round,
         Showing: q.data.Showing,
         Played: q.Played,
+
+        ID: q.data.ID,
     }
 }
 
@@ -168,4 +191,6 @@ type QuestionStateSnapshot struct {
     Round Round
     Showing int
     Played bool
+
+    ID string
 }

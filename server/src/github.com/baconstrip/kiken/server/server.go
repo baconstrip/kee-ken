@@ -188,7 +188,12 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
     }, nil
 }
 
-func encodeServerMessage(msg interface{}) message.ServerMessage {
+
+// Begin exposed interface.
+
+// EncodeServerMessage wraps a message from the server in message.ServerMessage
+// in preparation for sending to a client. msg must be a pointer to the data.
+func EncodeServerMessage(msg interface{}) message.ServerMessage {
     name := reflect.TypeOf(msg).Elem().Name()
     return message.ServerMessage{
         Type: name,
@@ -196,6 +201,36 @@ func encodeServerMessage(msg interface{}) message.ServerMessage {
     }
 }
 
+// MessageAll schedules a message to be sent to all clients asynchronously.
+// msg should not be modified after calling this function.
+func (s *Server) MessageAll(msg message.ServerMessage) {
+    s.sessionManager.messageAll(msg)
+}
+
+// MessageHost schedules a message to be sent to the host client asynchronously.
+// msg should not be modified after calling this function.
+func (s *Server) MessageHost(msg message.ServerMessage) {
+    s.sessionManager.messageHost(msg)
+}
+
+// MessageAll schedules a message to be sent to all player clients 
+// asynchronously. msg should not be modified after calling this function.
+func (s *Server) MessagePlayers(msg message.ServerMessage) {
+    s.sessionManager.messagePlayers(msg)
+}
+
+// MessagePlayer schedules a message to be sent to the client named by name
+// asynchronously. msg should not be modified after calling this function.
+func (s *Server) MessagePlayer(msg message.ServerMessage, name string) {
+    s.sessionManager.messagePlayer(msg, name)
+}
+
+// New creates the server that handles all of the communication for the game,
+// including serving the pages for logging in, static content, and hosting the
+// websocket gameplay. The server processes messages and passes them to other
+// parts of the program as messages. As such, a ListenerManager is provided by
+// reference from the other parts of the program, to allow other aspects to
+// register event listeners.
 func New(templatePath, staticPath, passcode string, port int, lm *ListenerManager) *Server {
     server := &Server{
         port: port,

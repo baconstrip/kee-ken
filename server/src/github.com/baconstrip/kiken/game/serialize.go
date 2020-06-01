@@ -33,3 +33,10 @@ func (b *BoardStateSnapshot) ToBoardOverview() *message.BoardOverview {
         Categories: categories,
     }
 }
+
+func (q *QuestionStateSnapshot) ToQuestionPrompt() *message.QuestionPrompt {
+    return &message.QuestionPrompt{
+        Question: q.Question,
+        Value: q.Value,
+    }
+}

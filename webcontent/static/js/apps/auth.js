@@ -41,7 +41,7 @@ Vue.component('auth-window', {
                 url: "http://" + window.location.host + "/auth",
                 data: {
                     Name: $("#name-field").val(),
-                    Host: baseVue.host == "true",
+                    Host: baseVue.host == true,
                     Passcode: $("#passcode").val(),
                     ServerPasscode: $("#server-passcode").val(),
                 },

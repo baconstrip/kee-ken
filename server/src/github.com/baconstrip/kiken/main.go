@@ -76,9 +76,12 @@ func main() {
 
     gState := g.CreateState()
  //   pretty.Print(gState)
+    _ = gState
+
+    lm := server.NewListenerManager()
 
     log.Printf("Starting Kiken server on port %v", *flagPort)
-    s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, gState)
+    s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, lm)
 
     log.Fatal(s.ListenAndServe())
 }

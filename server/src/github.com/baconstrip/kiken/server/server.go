@@ -1,20 +1,18 @@
 package server
 
 import (
-    "sync"
     "fmt"
-    "time"
     "log"
+    "reflect"
+    "time"
+    "bytes"
     "strconv"
     "net/http"
     "html/template"
     "path/filepath"
     "encoding/json"
-    "crypto/rand"
-    "math/big"
 
     "golang.org/x/net/websocket"
-    "github.com/baconstrip/kiken/game"
     "github.com/baconstrip/kiken/message"
 )
 
@@ -30,24 +28,11 @@ type Server struct {
 
     sessionManager SessionManager
 
+    listenerManager *ListenerManager
+
     mux *http.ServeMux
     port int
     passcode string
-    ga *game.GameState
-}
-
-type SessionID uint64
-
-type SessionManager struct {
-    mu sync.Mutex
-
-    sessions map[SessionID]SessionVar
-}
-
-type SessionVar struct {
-    name string
-    passcode string
-    host bool
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,36 +55,6 @@ func (s *Server) hostHandler(w http.ResponseWriter, r *http.Request) {
         log.Printf("Error loading client page: %v", err)
     }
 }
-
-func (s *Server) createSession(vars SessionVar, w http.ResponseWriter) error {
-    s.sessionManager.mu.Lock()
-    defer s.sessionManager.mu.Unlock()
-
-    var max big.Int
-    max.SetUint64(maxUint64)
-    keyBig, err := rand.Int(rand.Reader, &max)
-    if err != nil {
-        return fmt.Errorf("failed to generate random number: %v", err)
-    }
-
-    key := keyBig.Uint64()
-
-    s.sessionManager.sessions[SessionID(key)] = vars
-    cookie := http.Cookie{
-        Name: sessionName,
-        Value: strconv.FormatUint(key, 10),
-        Expires: time.Now().Add(time.Hour*24),
-    }
-    http.SetCookie(w, &cookie)
-    return nil
-}
-
-func (s *Server) destroySession(key SessionID) {
-    s.sessionManager.mu.Lock()
-    defer s.sessionManager.mu.Unlock()
-    delete(s.sessionManager.sessions, key)
-}
-
 
 func writeError(w http.ResponseWriter, msg string, code int) {
     m, err := json.Marshal(&message.ServerError{
@@ -154,13 +109,18 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    if s.sessionManager.userExists(authInfo.Name, true) {
+        writeError(w, "That name is already in use, please choose another", 1015)
+        return
+    }
+
     if authInfo.Host {
         if authInfo.ServerPasscode != s.passcode {
             writeError(w, "Bad passcode", 1008)
             return
         }
 
-        err := s.createSession(SessionVar{
+        err := s.sessionManager.createSession(SessionVar{
             name: authInfo.Name,
             host: true,
         }, w)
@@ -178,7 +138,7 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = s.createSession(SessionVar{
+    err = s.sessionManager.createSession(SessionVar{
         name: authInfo.Name,
         passcode: authInfo.Passcode,
         host: false,
@@ -186,59 +146,67 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
     writeJSON(w, &message.AuthSuccess{"Successfully joined as player"})
 }
 
-func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
-    r := ws.Request()
-    sessionCookie, err := r.Cookie(sessionName)
+func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
+    r := bytes.NewReader(msg)
+    d := json.NewDecoder(r)
+    // Assume there's a starting token.
+    _, err := d.Token()
     if err != nil {
-        ws.Close()
-        return
+        return message.ClientMessage{}, err
     }
-
-    session, err := strconv.ParseUint(sessionCookie.Value, 10, 64)
+    t, err := d.Token()
     if err != nil {
-        ws.Close()
-        return
+        return message.ClientMessage{}, err
     }
-
-    s.sessionManager.mu.Lock()
-    vars, ok := s.sessionManager.sessions[SessionID(session)]
-    s.sessionManager.mu.Unlock()
-
-    if !ok {
-        ws.Close()
-        return
+    if s, ok := t.(string); !ok || s != "Type" {
+        return message.ClientMessage{}, fmt.Errorf("bad message type to decodeClientMessage, got %v", s)
     }
+    // Assume the next value is the type.
+    var msgType string
+    err = d.Decode(&msgType)
+    t, err = d.Token()
+    if err != nil {
+        return message.ClientMessage{}, err
+    }
+    if s, ok := t.(string); !ok || s != "Data" {
+        return message.ClientMessage{}, fmt.Errorf("bad message type to decodeClientMessage, got %v", s)
+    }
+    var value interface{}
+    switch msgType {
+    case "ClientTestMessage":
+        m := message.ClientTestMessage{}
+        err = d.Decode(&m)
+        value = &m
+    }
+    if err != nil {
+        return message.ClientMessage{}, fmt.Errorf("error parsing client message: %v", err)
+    }
+    log.Printf("Decoded message from client: %+v", value)
+    return message.ClientMessage{
+        Type: msgType,
+        Data: value,
+    }, nil
+}
 
-    log.Printf("Session of authenticated client: %+v", vars)
-
-    for {
-        var response string
-        if err := websocket.Message.Receive(ws, &response); err != nil {
-            log.Printf("Connection broken: %v", err)
-            break
-        }
-
-        log.Printf("From the client: %v", response)
-        out, err := json.Marshal(s.ga.Boards[0].Snapshot().ToBoardOverview())
-        if err != nil {
-            log.Printf("Error marshaling player message: %v", err)
-        }
-        log.Printf("sending: %v", string(out))
-        if err := websocket.Message.Send(ws, string(out)); err != nil{
-            log.Printf("Connection broken: %v", err)
-            break
-        }
+func encodeServerMessage(msg interface{}) message.ServerMessage {
+    name := reflect.TypeOf(msg).Elem().Name()
+    return message.ServerMessage{
+        Type: name,
+        Data: msg,
     }
 }
 
-func New(templatePath, staticPath, passcode string, port int, g *game.GameState) *Server {
+func New(templatePath, staticPath, passcode string, port int, lm *ListenerManager) *Server {
     server := &Server{
         port: port,
         passcode: passcode,
-        ga: g,
         sessionManager: SessionManager{
             sessions: make(map[SessionID]SessionVar),
+            connections: make(map[SessionID]*Connection),
+            names: make(map[string]SessionID),
+            recentlyDropped: make(map[SessionID]time.Time),
         },
+        listenerManager: lm,
     }
     server.index = template.Must(template.ParseFiles(
         filepath.Join(templatePath, "index.html"),

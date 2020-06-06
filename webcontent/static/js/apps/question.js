@@ -18,9 +18,7 @@ questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="d
       </div>
       <component 
         v-if="!responsesClosed"
-        v-bind:begin="startCountdown"
         v-bind:duration="duration"
-        v-bind:color="progressColor"
         @countdownStart="recordStart"
         v-bind:is="progressComponent">
       </component>
@@ -37,30 +35,14 @@ questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="d
 `
 
 Vue.component('questionWindow', {
-    props: ['question', 'answer', 'begin', 'duration', 'answeringPlayer', 'responsesClosed'],
+    props: ['question', 'answer',  'duration', 'answeringPlayer', 'responsesClosed'],
     data: function() {
         return {
             lastStart: '',
             progressComponent: "progressbar",
-            startCountdown: 0,
-            progressColor: 'danger',
         }
     },
     template: questionTemplate,
-    watch: {
-        answeringPlayer: function(q, _) {
-            this.progressComponent = "";
-            this.progressComponent = "progressbar";
-            this.lastStart = '';
-            
-            this.startCountdown++;
-            this.progressColor = 'success';
-        },
-        begin: function(q, _) {
-            this.progressColor = 'warning';
-            this.startCountdown++; 
-        },
-    },
     methods: {
         recordStart: function() {
             this.lastStart = new Date();
@@ -74,9 +56,13 @@ Vue.component('questionWindow', {
 
             this.$emit("buzz", delta);
         },
+        beginCountdown: function(e) {
+            this.lastStart = '';
+        },
     },
     created: function() {
         EventBus.$on("spacePress", this.finishTimer);
+        EventBus.$on("beginCountdown", this.beginCountdown);
     },
     mounted: function() {
         $("#question-modal").modal("show");

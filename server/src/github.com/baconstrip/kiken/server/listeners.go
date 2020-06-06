@@ -8,7 +8,7 @@ import (
 )
 
 type JoinListener func(name string, host bool) error
-type LeaveListener func(name string) error
+type LeaveListener func(name string, host bool) error
 type ClientMessageListener func(name string, host bool, msg message.ClientMessage) error
 
 type ListenerManager struct {
@@ -64,14 +64,14 @@ func (l *ListenerManager) dispatchJoin(name string, host bool) {
     }
 }
 
-func (l *ListenerManager) dispatchLeave(name string) {
+func (l *ListenerManager) dispatchLeave(name string, host bool) {
     l.mu.RLock()
     defer l.mu.RUnlock()
 
     for _, listener := range l.leaveListeners {
         listenerCpy := listener
         go func() {
-            if err := listenerCpy(name); err != nil {
+            if err := listenerCpy(name, host); err != nil {
                 log.Printf("Error processing listener for leave: %v", err)
             }
         }()

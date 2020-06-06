@@ -44,9 +44,9 @@ func (s *Server) clientWriter(sid SessionID) {
                 }
                 if err := websocket.Message.Send(c.soc, string(out)); err != nil {
                     go func() {
-                        name, firstLeave := s.sessionManager.dropConnection(sid)
+                        name, firstLeave, host := s.sessionManager.dropConnection(sid)
                         if firstLeave {
-                            s.listenerManager.dispatchLeave(name)
+                            s.listenerManager.dispatchLeave(name, host)
                         }
                     }()
                     log.Printf("Dropping connection to client with session %v because of error sending message: %v", sid, err)
@@ -70,9 +70,9 @@ func (s *Server) clientReader(sid SessionID, ws *websocket.Conn) {
         err := websocket.Message.Receive(ws, &msg)
         if err != nil {
             log.Printf("Dropping connection to client with session %v because of error reading input: %v", sid, err)
-            name, firstLeave := s.sessionManager.dropConnection(sid)
+            name, firstLeave, host := s.sessionManager.dropConnection(sid)
             if firstLeave {
-                s.listenerManager.dispatchLeave(name)
+                s.listenerManager.dispatchLeave(name, host)
             }
             return
         }

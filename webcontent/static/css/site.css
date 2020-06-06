@@ -12,3 +12,21 @@ body {
   background-color: white !important;
   color: #111;
 }
+
+tr {
+  width: 20%;
+}
+
+th {
+  width: 20%;
+}
+
+.connection {
+  width: 100%;
+  height: 20px;
+}
+
+.selecting {
+  width: 30%;
+  height: 20px;
+} 

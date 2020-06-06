@@ -3,7 +3,7 @@ progressTemplate = `<div class="progress" style="height: 20px;">
 </div>`
 
 Vue.component('progressbar', {
-    props: ['begin', 'duration', 'color'],
+    props: ['duration'],
     data: function () {
         return {
             start: 0,
@@ -11,12 +11,19 @@ Vue.component('progressbar', {
                 width: "100%",
                 "transition-duration": "0.1s",
             },
+            color: 'danger',
         };
     },
     template: progressTemplate,
-    watch: {
-        begin: function() {
+    methods: {
+        beginCountdown: function(e) {
             console.log("began countdown with duration: " + this.duration);
+            if (e == "answer") {
+                this.color = "success";
+            }
+            else if (e == "buzz")  {
+                this.color = "warning";
+            }
             
             this.start = new Date();
             var baseVue = this;
@@ -41,4 +48,7 @@ Vue.component('progressbar', {
             return ['progress-bar', 'bg-'+this.color]
         },
     },
+    created: function () {
+        EventBus.$on("beginCountdown", this.beginCountdown); 
+    }
 });

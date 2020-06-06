@@ -5,6 +5,7 @@ import (
     "math"
     "fmt"
     "log"
+    "math/rand"
 
     "github.com/baconstrip/kiken/server"
     "github.com/baconstrip/kiken/message"
@@ -44,6 +45,7 @@ type questionPromptState struct {
     question *QuestionState
     questionOpened time.Time
     attemptedBuzzes map[string]int
+    alreadyAnswered []string
     buzzCloseTimerSet bool
     playerAnswering string
 
@@ -53,6 +55,9 @@ type questionPromptState struct {
 type PlayerStats struct {
     Name string
     Money int
+
+    Connected bool
+    Selecting bool
 }
 
 // generateUpdatePlayers creates the UpdatePlayers message from the players
@@ -61,7 +66,12 @@ type PlayerStats struct {
 func (g *GameDriver) generateUpdatePlayers() *message.UpdatePlayers {
     plys := make(map[string]message.Player)
     for name, stats := range g.players {
-        plys[name] = message.Player{Name: name, Money: stats.Money}
+        plys[name] = message.Player{
+            Name: name,
+            Money: stats.Money,
+            Connected: stats.Connected,
+            Selecting: stats.Selecting,
+        }
     }
     return &message.UpdatePlayers{
         Plys: plys,
@@ -87,12 +97,28 @@ func (g *GameDriver) sendUpdateBoard() {
     g.server.MessageAll(overview)
 }
 
+// playerSelecting returns the Stats struct of the player that is currently
+// selecting a question. Returns nil if nobody is selecting.
+// Callers must obtain a mutex before calling.
+func (g *GameDriver) playerSelecting() *PlayerStats {
+    for _, stats := range g.players {
+        if stats.Selecting {
+            return stats
+        }
+    }
+    return nil
+}
+
 
 // ------ BEGIN LISTENERS -----
 
 func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
     g.gameState.mu.RLock()
     defer g.gameState.mu.RUnlock()
+
+    if g.gameState.currentStatus == STATUS_PREPARING ||  g.gameState.currentStatus == STATUS_PRESTART {
+        return nil
+    }
 
     b := g.gameState.CurrentBoard()
     if b == nil {
@@ -108,10 +134,25 @@ func (g *GameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool)
     g.gameState.mu.Lock()
     defer g.gameState.mu.Unlock()
 
+    // If a player is returning.
+    if _, ok := g.players[name]; ok {
+        g.players[name].Connected = true
+        g.sendUpdatePlayers()
+        return nil
+    }
+
+    if g.host != nil && g.host.Name == name {
+        g.host.Connected = true
+        g.sendUpdatePlayers()
+        msg := server.EncodeServerMessage(&message.HostAdd{Name: name})
+        g.server.MessageAll(msg)
+        return nil
+    }
+
     if host {
-        g.host = &PlayerStats{Money: 0, Name: name}
+        g.host = &PlayerStats{Money: 0, Name: name, Connected: true}
     } else {
-        g.players[name] = &PlayerStats{Money: 0, Name: name}
+        g.players[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
         if g.host != nil {
             msg := server.EncodeServerMessage(&message.HostAdd{Name: name})
             g.server.MessagePlayer(msg, name)
@@ -125,6 +166,86 @@ func (g *GameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool)
         return nil
     }
     g.sendUpdatePlayers()
+    return nil
+}
+
+func (g *GameDriver) OnLeaveMarkDisconnected(name string, host bool) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if host {
+        g.host.Connected = false
+        return nil
+    }
+
+    if g.players[name] == nil {
+        return nil
+    }
+
+    g.players[name].Connected = false
+
+    // On the chance they disconnect while answering, reset the state of
+    // answering a question.
+    if g.gameState.currentStatus == STATUS_PLAYERS_ANSWERING && g.quesState.playerAnswering == name {
+        resp := message.OpenResponses{
+            Interval: int(g.config.ChanceTime.Seconds() * 1000),
+        }
+        g.server.MessageAll(server.EncodeServerMessage(&resp))
+        g.gameState.currentStatus = STATUS_PLAYERS_BUZZING
+        log.Printf("all players counting down")
+        g.quesState.questionOpened = time.Now()
+        g.quesState.attemptedBuzzes = make(map[string]int)
+
+        unless := runAfterUnless(g.config.ChanceTime, g.TimedTimeOutBuzzing)
+        g.quesState.buzzTimeoutUnless = unless
+        if s, ok := g.players[g.quesState.playerAnswering]; ok {
+            g.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.data.Value
+        }
+        g.sendUpdatePlayers()
+    }
+
+    log.Printf("sending updated player lists: %+v", g.players)
+    g.sendUpdatePlayers()
+    return nil
+}
+
+func (g *GameDriver) OnStartGameMessageStartGame(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if g.gameState.currentStatus != STATUS_PRESTART {
+        return nil
+    }
+    if !host {
+        return nil
+    }
+
+    if len(g.players) == 0 {
+
+        e := server.EncodeServerMessage(message.ServerError{Error: "Please wait for players to join before starting", Code: 2001})
+        g.server.MessagePlayer(e, name)
+        return nil
+    }
+
+    // Select a random player to begin selecting a question
+
+    idx := rand.Int() % len(g.players)
+    i := 0
+
+    // Double randomize, since map iteration order is random.
+    for _, stats := range g.players {
+        if idx == i {
+            stats.Selecting = true
+            break
+        }
+        i++
+    }
+
+    g.sendUpdateBoard()
+    g.sendUpdatePlayers()
+
+    g.gameState.currentStatus = STATUS_SHOWING_BOARD
+
     return nil
 }
 
@@ -241,6 +362,10 @@ func (g *GameDriver) OnMarkAnswerMessageMoveAlong(name string, host bool, msg me
             log.Printf("found, granting %v", s)
             g.players[g.quesState.playerAnswering].Money = s.Money + g.quesState.question.data.Value
         }
+        // When a player gets a question correct, they get to pick next.
+        g.playerSelecting().Selecting = false
+        g.players[g.quesState.playerAnswering].Selecting = true
+
         g.sendUpdatePlayers()
         return nil
     }
@@ -259,6 +384,7 @@ func (g *GameDriver) OnMarkAnswerMessageMoveAlong(name string, host bool, msg me
     if s, ok := g.players[g.quesState.playerAnswering]; ok {
         g.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.data.Value
     }
+    g.quesState.alreadyAnswered = append(g.quesState.alreadyAnswered, g.quesState.playerAnswering)
     g.sendUpdatePlayers()
     return nil
 }
@@ -386,6 +512,8 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
 
     lm.RegisterJoin(g.OnJoinSendBoard)
     lm.RegisterJoin(g.OnJoinSendUpdatePlayersAndAddPlayer)
+    lm.RegisterLeave(g.OnLeaveMarkDisconnected)
+    lm.RegisterMessage("StartGame", g.OnStartGameMessageStartGame)
     lm.RegisterMessage("SelectQuestion", g.OnSelectQuestionMessageShowQuestion)
     lm.RegisterMessage("FinishReading", g.OnFinishReadingMessageBeginCountdown)
     lm.RegisterMessage("AttemptAnswer", g.OnAttemptAnswerMessageAllowAnswer)
@@ -400,7 +528,7 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
 func (g *GameDriver) Run() {
     g.gameState.mu.Lock()
     g.gameState.currentRound = ICHIBAN
-    g.gameState.currentStatus = STATUS_SHOWING_BOARD
+    g.gameState.currentStatus = STATUS_PRESTART
     g.gameState.mu.Unlock()
     for {
         time.Sleep(10 * time.Millisecond)

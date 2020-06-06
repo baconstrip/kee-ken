@@ -99,6 +99,11 @@ type UpdatePlayers struct {
 type Player struct {
     Name string
     Money int
+
+    // Whether the player is currently connected. For transitive disconnects.
+    Connected bool
+    // Whether the player is currently selecting a question.
+    Selecting bool
 }
 
 // HostAdd is a message sent by the server when the host joins or to set the
@@ -152,6 +157,10 @@ type MoveOn struct {}
 // NextRound is a message that the client sends to move the game to the next
 // round once a round is complete.
 type NextRound struct {}
+
+// StartGame is a messsage that the host clients send to start the game from 
+// a before start state.
+type StartGame struct {}
 
 // AttemptAnswer is a message that a player client sends when they want to
 // attempt to answer a question. 

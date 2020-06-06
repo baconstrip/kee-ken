@@ -5,19 +5,23 @@ gameTemplate = `<div id="app" class="container">
 <hostplayer v-if="ws" v-bind:name="hostPlayerName">
 </hostplayer>
 <gameboard
-    v-if="ws"
+    v-if="board"
     v-bind:board="board"
     v-bind:host="host"
     v-on:selectQuestion="sendSelect"
     v-on:nextRound="sendNextRound">
 </gameboard>
+<alertbox message="Waiting for the host to start the game..." v-if="!board && joined">
+</alertbox>
+<button v-if="joined && host && !board" type="button" class="btn btn-success" @click="sendStartGame">Start Game</button>
+<alertbox message="Connecting to the server..." v-if="ws == null && joined">
+</alertbox>
 <component
     v-bind:is="questionComponent"
     v-bind:question="question"
     :key="question"
     v-bind:answer="answer"
     v-bind:duration="duration"
-    v-bind:begin="beginCountdown"
     v-bind:answeringPlayer="answeringPlayer"
     v-bind:responsesClosed="responsesClosed"
     v-on:markCorrect='sendMarkAnswer(true)'
@@ -28,6 +32,8 @@ gameTemplate = `<div id="app" class="container">
 </component>
 <auth-window v-bind:host="host" v-on:auth-ready="join()" v-if="!joined">
 </auth-window>
+<alertbox v-bind:message="gameErrors" v-if="gameErrors">
+</alertbox>
 <playerlist v-if="players" v-bind:players="players">
 </playerlist>
 </div>`
@@ -42,6 +48,7 @@ new Vue({
         name: '',
         serverContent: '',
         errorMessages: '',
+        gameErrors: '',
         board: '',
         host: false,
         hostPlayerName: "",
@@ -51,9 +58,7 @@ new Vue({
 
         questionComponent: null,
 
-        // Increment this number to indicate to the progress bar to start
-        // counting.
-        beginCountdown: 0,
+        // Duration of the current countdown.
         duration: 0,
 
         // Player currently trying to answer the question
@@ -94,11 +99,12 @@ new Vue({
                 if (msg["Type"] == "OpenResponses") {
                     baseVue.answeringPlayer = '';
                     baseVue.duration = msg["Data"].Interval;
-                    baseVue.beginCountdown++;
+                    EventBus.$emit("beginCountdown", "buzz");
                 }
                 if (msg["Type"] == "PlayerAnswering") {
                     baseVue.duration = msg["Data"].Interval;
                     baseVue.answeringPlayer = msg["Data"].Name;
+                    EventBus.$emit("beginCountdown", "answer");
                 }
                 if (msg["Type"] == "CloseResponses") {
                     baseVue.responsesClosed = true;
@@ -109,9 +115,12 @@ new Vue({
                     baseVue.answeringPlayer = '';
                     baseVue.duration = 0;
                     baseVue.responsesClosed = false;
-                    baseVue.beginCountdown = 0;
                     baseVue.question = '';
                     baseVue.answer = '';
+                }
+                if (msg["Type"] == "ServerError") {
+                    baseVue.gameErrors = msg["Data"].Error;
+                    setTimeout(() => { baseVue.gameErrors = '' }, 10000);
                 }
             };
             this.ws.onerror = function(e) {
@@ -176,6 +185,14 @@ new Vue({
                 })
             );
         },
+        sendStartGame: function(e) {
+            this.ws.send(
+                JSON.stringify({
+                    Type: "StartGame",
+                    Data: {},
+                })
+            );
+        }
     },
     created: function() {
         if ($("#is-host").val()) {

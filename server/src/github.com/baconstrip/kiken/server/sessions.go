@@ -97,14 +97,15 @@ func (s *SessionManager) addConnection(id SessionID, ws *websocket.Conn) {
 }
 
 // dropConnection removes the copy of the message queues and socket associated
-// with a user from the server. It returns two values, the name of the player 
-// leaving, and whether or not this is handler has been called for this player
-// recently.
-func (s *SessionManager) dropConnection(id SessionID) (string, bool) {
+// with a user from the server. It returns three values, the name of the player 
+// leaving, whether or not this is handler has been called for this player
+// recently, and finally whether or not this player was a host.
+func (s *SessionManager) dropConnection(id SessionID) (string, bool, bool) {
     s.mu.Lock()
     defer s.mu.Unlock()
 
     name := s.sessions[id].name
+    host := s.sessions[id].host
 
     if c, ok := s.connections[id]; ok {
         close(c.in)
@@ -122,7 +123,7 @@ func (s *SessionManager) dropConnection(id SessionID) (string, bool) {
     }
     s.recentlyDropped[id] = time.Now()
 
-    return name, retVal
+    return name, retVal, host
 }
 
 // withConnection locks the mutex and runs an operation. Returns an error if 
@@ -204,6 +205,18 @@ func (s *SessionManager) userExists(name string, caseInsensitive bool) bool {
     for _, vars := range s.sessions {
         if vars.name == name || strings.ToLower(name) == strings.ToLower(vars.name) && caseInsensitive {
             return true
+        }
+    }
+    return false
+}
+
+func (s *SessionManager) correctPasscode(name string, caseInsensitive bool, passcode string) bool {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+
+    for _, vars := range s.sessions {
+        if vars.name == name || strings.ToLower(name) == strings.ToLower(vars.name) && caseInsensitive {
+            return vars.passcode == passcode
         }
     }
     return false

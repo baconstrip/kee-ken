@@ -110,8 +110,23 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if s.sessionManager.userExists(authInfo.Name, true) {
-        writeError(w, "That name is already in use, please choose another", 1015)
-        return
+        if s.sessionManager.correctPasscode(authInfo.Name, true, passcode) {
+            err = s.sessionManager.createSession(SessionVar{
+                name: authInfo.Name,
+                passcode: authInfo.Passcode,
+                host: false,
+            }, w)
+            if err != nil {
+                log.Printf("Failed to create session for returning player: %v", err)
+                writeError(w, "Bad request", 1019)
+            }
+
+            writeJSON(w, &message.AuthSuccess{"Successfully rejoined as player"})
+            return
+        } else {
+            writeError(w, "Incorrect passcode", 1015)
+            return
+        }
     }
 
     if authInfo.Host {
@@ -186,6 +201,8 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
     case "MoveOn":
         value = &message.MoveOn{}
     case "NextRound":
+        value = &message.NextRound{}
+    case "StartGame":
         value = &message.NextRound{}
     case "AttemptAnswer":
         m := message.AttemptAnswer{}

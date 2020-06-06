@@ -6,8 +6,10 @@ type Status int
 
 const (
     STATUS_UNKNOWN Status = iota
-    STATUS_PRESTART
+    // Host is preparing the game
     STATUS_PREPARING
+    // Waiting on the host to press "start game"
+    STATUS_PRESTART
     // Gameplay has been paused by the host.
     STATUS_PAUSED
     // Board overview is being shown.

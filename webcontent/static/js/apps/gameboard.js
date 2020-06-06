@@ -10,7 +10,7 @@ gameboardTemplate = `<div class="row">
             </th>
           </tr>
           <tr v-for="row in rows">
-            <td v-for="question in row" @click="select" v-bind:qid="question.ID">
+            <td v-for="question in row" @click="select" v-bind:qid="question.ID" v-bind:played="question.Played">
               <span v-if="!question.Played">{{ question.Value }}</span>
             </td>
           </tr>
@@ -19,6 +19,11 @@ gameboardTemplate = `<div class="row">
     </template>
     <div class="alert alert-primary" role="alert" v-else>
       Connecting to the server...
+    </div>
+    <div class="col" v-if="showNext">
+      <div class="row">
+        <button type="button" class="btn btn-success" @click="$emit('nextRound');">Next round</button>
+      </div>
     </div>
   </div> 
 </div>`
@@ -51,7 +56,21 @@ Vue.component('gameboard', {
             if (elem.tagName == "SPAN") {
                 elem = elem.parentElement;
             }
-            console.log(elem.attributes["qid"]);
+            var id = elem.attributes["qid"];
+            if (elem.attributes["played"]) {
+                return;
+            }
+            this.$emit("selectQuestion", id);
         }
     },
+    computed: {
+        showNext: function() {
+            if (!this.board) {
+                return '';
+            }
+            var unplayed = this.board.Categories.filter(c => c.Questions.filter(q => !q.Played).length > 0);
+            console.log(unplayed)
+            return unplayed.length == 0;
+        }
+    }
 });

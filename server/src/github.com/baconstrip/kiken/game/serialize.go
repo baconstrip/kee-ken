@@ -35,10 +35,20 @@ func (b *BoardStateSnapshot) ToBoardOverview() *message.BoardOverview {
     }
 }
 
-func (q *QuestionStateSnapshot) ToQuestionPrompt() *message.QuestionPrompt {
+func (q *QuestionStateSnapshot) ToQuestionPrompt(includeAnswer bool) *message.QuestionPrompt {
+    if (includeAnswer) {
+        return &message.QuestionPrompt{
+            Question: q.Question,
+            Value: q.Value,
+            Answer: q.Answer,
+            ID: q.ID,
+        }
+    }
+
     return &message.QuestionPrompt{
         Question: q.Question,
         Value: q.Value,
         ID: q.ID,
     }
 }
+

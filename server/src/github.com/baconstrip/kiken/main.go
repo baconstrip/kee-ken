@@ -3,6 +3,7 @@ package main
 import (
     "flag"
     "log"
+    "time"
     "os"
 
     "github.com/kr/pretty"
@@ -82,7 +83,13 @@ func main() {
     log.Printf("Starting Kiken server on port %v", *flagPort)
     s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, lm)
 
-    driver := game.NewGameDriver(s, gState, lm)
+    config := game.Configuration{
+        ChanceTime: 5*time.Second,
+        DisambiguationTime: 200*time.Millisecond,
+        AnswerTime: 10*time.Second,
+    }
+
+    driver := game.NewGameDriver(s, gState, lm, config)
     go driver.Run()
 
     log.Fatal(s.ListenAndServe())

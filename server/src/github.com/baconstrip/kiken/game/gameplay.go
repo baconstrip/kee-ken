@@ -2,18 +2,93 @@ package game
 
 import (
     "time"
+    "math"
+    "fmt"
     "log"
 
     "github.com/baconstrip/kiken/server"
     "github.com/baconstrip/kiken/message"
 )
 
+
+type Configuration struct {
+    // How long players are given to press to be able to press the button for a
+    // chance to answer the question.
+    ChanceTime time.Duration
+
+    // Time to wait after one player buzzes to make sure that that person who
+    // buzzed the fastest wins, even if their packet/message gets to the server
+    // after someone else's.
+    DisambiguationTime time.Duration
+
+    // How long players are given to answer a question.
+    AnswerTime time.Duration
+}
+
 // GameDriver is the main object that manages a game.
 type GameDriver struct {
+    // TODO refactor a mutex into this struct, instead of relying on the mutex
+    // of the GameState.
     gameState *GameState
     listenerManager *server.ListenerManager
     server *server.Server
+
+    config Configuration
+
+    players map[string]*PlayerStats
+    host *PlayerStats
+    quesState *questionPromptState
 }
+
+type questionPromptState struct {
+    question *QuestionState
+    questionOpened time.Time
+    attemptedBuzzes map[string]int
+    buzzCloseTimerSet bool
+    playerAnswering string
+
+    buzzTimeoutUnless unlessFunc
+}
+
+type PlayerStats struct {
+    Name string
+    Money int
+}
+
+// generateUpdatePlayers creates the UpdatePlayers message from the players
+// that the game knows about.
+// Callers must obtain a mutex before calling.
+func (g *GameDriver) generateUpdatePlayers() *message.UpdatePlayers {
+    plys := make(map[string]message.Player)
+    for name, stats := range g.players {
+        plys[name] = message.Player{Name: name, Money: stats.Money}
+    }
+    return &message.UpdatePlayers{
+        Plys: plys,
+    }
+}
+
+// sendUpdatePlayers sends an UpdatePlayers message to all clients.
+// Callers must obtain a mutex before calling.
+func (g *GameDriver) sendUpdatePlayers() {
+    msg := server.EncodeServerMessage(g.generateUpdatePlayers())
+    g.server.MessageAll(msg)
+}
+
+// sendUpdateBoard sends the entire Board to all players, to update the clients
+// view of the game board.
+// Callers must obtain a mutex before calling.
+func (g *GameDriver) sendUpdateBoard() {
+    b := g.gameState.CurrentBoard()
+    if b == nil {
+        return
+    }
+    overview := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
+    g.server.MessageAll(overview)
+}
+
+
+// ------ BEGIN LISTENERS -----
 
 func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
     g.gameState.mu.RLock()
@@ -23,11 +98,33 @@ func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
     if b == nil {
         return nil
     }
-
     msg := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
-
     g.server.MessagePlayer(msg, name)
 
+    return nil
+}
+
+func (g *GameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if host {
+        g.host = &PlayerStats{Money: 0, Name: name}
+    } else {
+        g.players[name] = &PlayerStats{Money: 0, Name: name}
+        if g.host != nil {
+            msg := server.EncodeServerMessage(&message.HostAdd{Name: name})
+            g.server.MessagePlayer(msg, name)
+        }
+    }
+
+    if host {
+        g.sendUpdatePlayers()
+        msg := server.EncodeServerMessage(&message.HostAdd{Name: name})
+        g.server.MessageAll(msg)
+        return nil
+    }
+    g.sendUpdatePlayers()
     return nil
 }
 
@@ -42,6 +139,8 @@ func (g *GameDriver) OnSelectQuestionMessageShowQuestion(name string, host bool,
         return nil
     }
 
+    log.Printf("Got message from client: %+v", msg)
+
     sel := msg.Data.(*message.SelectQuestion)
 
     q := g.gameState.FindQuestion(sel.ID)
@@ -51,21 +150,248 @@ func (g *GameDriver) OnSelectQuestionMessageShowQuestion(name string, host bool,
         log.Printf("Bad question from client: %v", sel.ID)
         return nil
     }
-    prompt := q.Snapshot().ToQuestionPrompt()
-    g.server.MessageAll(server.EncodeServerMessage(prompt))
+    snap := q.Snapshot()
+    playerPrompt := snap.ToQuestionPrompt(false)
+    hostPrompt := snap.ToQuestionPrompt(true)
+    g.server.MessagePlayers(server.EncodeServerMessage(playerPrompt))
+    g.server.MessageHost(server.EncodeServerMessage(hostPrompt))
+
     g.gameState.currentStatus = STATUS_PRESENTING_QUESTION
+    g.quesState = &questionPromptState{
+        attemptedBuzzes: make(map[string]int),
+        question: q,
+    }
+    q.Played = true
     return nil
 }
 
-func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager) *GameDriver {
+func (g *GameDriver) OnFinishReadingMessageBeginCountdown(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+    if !host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_PRESENTING_QUESTION {
+        return nil
+    }
+
+    resp := message.OpenResponses{
+        Interval: int(g.config.ChanceTime.Seconds() * 1000),
+    }
+    g.server.MessageAll(server.EncodeServerMessage(&resp))
+    g.gameState.currentStatus = STATUS_PLAYERS_BUZZING
+    log.Printf("all players counting down")
+    g.quesState.questionOpened = time.Now()
+
+    unless := runAfterUnless(g.config.ChanceTime, g.TimedTimeOutBuzzing)
+    g.quesState.buzzTimeoutUnless = unless
+    return nil
+}
+
+func (g *GameDriver) OnAttemptAnswerMessageAllowAnswer(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+    if host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_PLAYERS_BUZZING {
+        return nil
+    }
+
+    time := msg.Data.(*message.AttemptAnswer).ResponseTime
+    if dur, ok := g.quesState.attemptedBuzzes[name]; ok {
+        if dur < time {
+            return nil
+        }
+    }
+    g.quesState.attemptedBuzzes[name] = time
+    if g.quesState.buzzCloseTimerSet {
+        return nil
+    }
+
+    g.quesState.buzzTimeoutUnless()
+    runAfter(g.config.DisambiguationTime, g.TimedSelectPlayerToAnswer)
+
+    return nil
+}
+
+func (g *GameDriver) OnMarkAnswerMessageMoveAlong(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if !host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_PLAYERS_ANSWERING {
+        return nil
+    }
+
+    correct := msg.Data.(*message.MarkAnswer).Correct
+
+    if correct {
+        g.sendUpdateBoard()
+        g.gameState.currentStatus = STATUS_POST_QUESTION
+
+        g.server.MessageAll(server.EncodeServerMessage(&message.CloseResponses{}))
+        log.Printf("map: %p", &g.players)
+        if s, ok := g.players[g.quesState.playerAnswering]; ok {
+            log.Printf("found, granting %v", s)
+            g.players[g.quesState.playerAnswering].Money = s.Money + g.quesState.question.data.Value
+        }
+        g.sendUpdatePlayers()
+        return nil
+    }
+
+    resp := message.OpenResponses{
+        Interval: int(g.config.ChanceTime.Seconds() * 1000),
+    }
+    g.server.MessageAll(server.EncodeServerMessage(&resp))
+    g.gameState.currentStatus = STATUS_PLAYERS_BUZZING
+    log.Printf("all players counting down")
+    g.quesState.questionOpened = time.Now()
+    g.quesState.attemptedBuzzes = make(map[string]int)
+
+    unless := runAfterUnless(g.config.ChanceTime, g.TimedTimeOutBuzzing)
+    g.quesState.buzzTimeoutUnless = unless
+    if s, ok := g.players[g.quesState.playerAnswering]; ok {
+        g.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.data.Value
+    }
+    g.sendUpdatePlayers()
+    return nil
+}
+
+func (g *GameDriver) OnMoveOnMessageShowBoard(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if !host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_POST_QUESTION {
+        return nil
+    }
+    g.sendUpdateBoard()
+
+    g.server.MessageAll(server.EncodeServerMessage(&message.HideQuestion{}))
+    g.gameState.currentStatus = STATUS_SHOWING_BOARD
+    return nil
+}
+
+func (g *GameDriver) OnNextRoundMessageAdvanceRound(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if !host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_SHOWING_BOARD {
+        return nil
+    }
+
+    g.gameState.currentRound = g.gameState.currentRound + 1
+
+    g.sendUpdateBoard()
+
+    return nil
+}
+
+func (g *GameDriver) TimedSelectPlayerToAnswer() error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    var ply string
+    lowest := math.MaxInt32
+    for p, d := range g.quesState.attemptedBuzzes {
+        if d < lowest {
+            lowest = d
+            ply = p
+        }
+    }
+
+    if ply == "" {
+        return fmt.Errorf("buzz process handler scheduled despite no buzzes")
+    }
+
+    g.gameState.currentStatus = STATUS_PLAYERS_ANSWERING
+    g.quesState.playerAnswering = ply
+    answering := &message.PlayerAnswering{
+        Name: ply,
+        Interval: int(g.config.AnswerTime.Seconds()*1000),
+    }
+    g.server.MessageAll(server.EncodeServerMessage(answering))
+    return nil
+}
+
+func (g *GameDriver) TimedTimeOutBuzzing() error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    g.gameState.currentStatus = STATUS_POST_QUESTION
+
+    g.server.MessageAll(server.EncodeServerMessage(&message.CloseResponses{}))
+    return nil
+}
+
+type timedFunc func() error
+
+// Functions scheduled to run after should re-obtain mutexes, as they are run
+// asynchronously to the caller.
+func runAfter(d time.Duration, f timedFunc) {
+    go func(d time.Duration, f timedFunc) {
+        select{
+        case <-time.After(d):
+            err := f()
+            if err != nil {
+                log.Printf("Error running timed function: %v", err)
+            }
+        }
+    }(d, f)
+}
+
+type unlessFunc func()
+
+// runAfterUnless runs a given function after the delay in d, unless returned
+// function returned is called, in which case it will do nothing.
+func runAfterUnless(d time.Duration, f timedFunc) unlessFunc {
+    u := make(chan bool, 100)
+    go func(d time.Duration, f timedFunc) {
+        select{
+        case <-u:
+            return
+        case <-time.After(d):
+            err := f()
+            if err != nil {
+                log.Printf("Error running timed unless function: %v", err)
+            }
+        }
+    }(d, f)
+    return func() {
+        u <- true
+    }
+}
+
+func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, config Configuration) *GameDriver {
     g := &GameDriver{
         server: s,
         gameState: gs,
         listenerManager: lm,
+        players: make(map[string]*PlayerStats),
+        config: config,
     }
 
     lm.RegisterJoin(g.OnJoinSendBoard)
+    lm.RegisterJoin(g.OnJoinSendUpdatePlayersAndAddPlayer)
     lm.RegisterMessage("SelectQuestion", g.OnSelectQuestionMessageShowQuestion)
+    lm.RegisterMessage("FinishReading", g.OnFinishReadingMessageBeginCountdown)
+    lm.RegisterMessage("AttemptAnswer", g.OnAttemptAnswerMessageAllowAnswer)
+    lm.RegisterMessage("MarkAnswer", g.OnMarkAnswerMessageMoveAlong)
+    lm.RegisterMessage("MoveOn", g.OnMoveOnMessageShowBoard)
+    lm.RegisterMessage("NextRound", g.OnNextRoundMessageAdvanceRound)
     return g
 }
 

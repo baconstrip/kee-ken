@@ -8,8 +8,18 @@ const (
     STATUS_UNKNOWN Status = iota
     STATUS_PRESTART
     STATUS_PREPARING
+    // Gameplay has been paused by the host.
+    STATUS_PAUSED
+    // Board overview is being shown.
     STATUS_SHOWING_BOARD
-    STATUS_PRESENTING_QUESTION // Question is being read.
+    // Question is being read.
+    STATUS_PRESENTING_QUESTION
+    // Waiting on players to take a change to answer.
+    STATUS_PLAYERS_BUZZING
+    // A player is attempting to answer the question.
+    STATUS_PLAYERS_ANSWERING
+    // Question has been answered or timed out, but is still being shown.
+    STATUS_POST_QUESTION
 )
 
 type Round int
@@ -70,10 +80,9 @@ func (g *GameState) CurrentBoard() *BoardState {
     return g.Boards[int(g.currentRound) - 1]
 }
 
+// Find Question looks up a question in the GameState. Caller *must* already
+// hold at least the read mutex for GameState.
 func (g *GameState) FindQuestion(id string) *QuestionState {
-    g.mu.RLock()
-    defer g.mu.RUnlock()
-
     for _, b := range g.Boards {
         for _, c := range b.Categories {
             for _, q := range c.Questions {

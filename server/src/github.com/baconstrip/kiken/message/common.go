@@ -45,18 +45,66 @@ type QuestionHidden struct {
 }
 
 // QuestionPrompt defines a message that the server sends to clients
-// to request that question be shown to clients.
+// to request that question be shown to clients. Answer is only set for the
+// host client.
 type QuestionPrompt struct {
     Question string
     Value int
+    Answer string
     ID string
 }
 
-// PlayerAdded is a message sent by the server when a player joins the game
+// OpenResponses is a message that the server sends to clients to instruct
+// them to begin counting down to give clients a chance to become the one to
+// answer a question.
+type OpenResponses struct {
+    // Interval is the time in milliseconds that players are allowed to request
+    // to answer the question.
+    Interval int
+}
+
+// CloseResponses is a message that the server sends to clients to indicate
+// that the server is no longer accepting buzzes.
+type CloseResponses struct {}
+
+// HideQuestion is a message that the server sends to clients to indicate
+// that the client should no longer show the question prompt.
+type HideQuestion struct {}
+
+// PlayerAnswering is a message that the server sends to clients to indicate
+// that the player given by Name is attempting to answer the question.
+type PlayerAnswering struct {
+    Name string
+    // Interval is the time in milliseconds that a player is given to answer a
+    // question.
+    Interval int
+}
+
+// DEPRECATED
+// PlayerAdd is a message sent by the server when a player joins the game
 // to instruct the client to add this player to the UI.
-type PlayerAdded struct {
+type PlayerAdd struct {
     Name string
     Money int
+}
+
+// UpdatePlayers is a message sent by the server to refresh the players on a
+// client.
+type UpdatePlayers struct {
+    Plys map[string]Player
+}
+
+// Player messages are not sent directly, but are embedded in an UpdatePlayers
+// message to describe players.
+type Player struct {
+    Name string
+    Money int
+}
+
+// HostAdd is a message sent by the server when the host joins or to set the
+// host for a player that has just joined.
+type HostAdd struct {
+    Name string
 }
 
 // ServerError is sent to the client when the server fails to handle a request.
@@ -84,6 +132,33 @@ type AuthInfo struct {
 // with ID should be the next question played.
 type SelectQuestion struct {
     ID string
+}
+
+// MarkAnswer is a message that the host client sends to decide whether a
+// players' answer is correct and to indicate that answering period is over.
+type MarkAnswer struct {
+    Correct bool
+}
+
+// FinishReading is a message that the host client sends when to indicate they
+// have finished reading the question, and that the server should start
+// accepting requests to answer.
+type FinishReading struct {}
+
+// MoveOn is a message that the host client sends to advance the game after a
+// quesiton.
+type MoveOn struct {}
+
+// NextRound is a message that the client sends to move the game to the next
+// round once a round is complete.
+type NextRound struct {}
+
+// AttemptAnswer is a message that a player client sends when they want to
+// attempt to answer a question. 
+type AttemptAnswer struct {
+    // Amount of time between processing the request to when the client pressed
+    // a button requesting to answer, as measured by the client.
+    ResponseTime int
 }
 
 type ClientTestMessage struct {

@@ -177,9 +177,33 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
         m := message.ClientTestMessage{}
         err = d.Decode(&m)
         value = &m
+    case "SelectQuestion":
+        m := message.SelectQuestion{}
+        err = d.Decode(&m)
+        value = &m
+    case "FinishReading":
+        value = &message.FinishReading{}
+    case "MoveOn":
+        value = &message.MoveOn{}
+    case "NextRound":
+        value = &message.NextRound{}
+    case "AttemptAnswer":
+        m := message.AttemptAnswer{}
+        err = d.Decode(&m)
+        value = &m
+    case "MarkAnswer":
+        m := message.MarkAnswer{}
+        err = d.Decode(&m)
+        value = &m
+    default:
+        log.Printf("Unknown message from client: %v", msgType)
+        return message.ClientMessage{}, fmt.Errorf("bad message type: %v", msgType)
     }
     if err != nil {
         return message.ClientMessage{}, fmt.Errorf("error parsing client message: %v", err)
+    }
+    if value == nil {
+        return message.ClientMessage{}, fmt.Errorf("nil message from client, discarding")
     }
     log.Printf("Decoded message from client: %+v", value)
     return message.ClientMessage{

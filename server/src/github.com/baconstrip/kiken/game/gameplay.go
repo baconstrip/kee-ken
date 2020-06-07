@@ -154,7 +154,7 @@ func (g *GameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool)
     } else {
         g.players[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
         if g.host != nil {
-            msg := server.EncodeServerMessage(&message.HostAdd{Name: g.host.name})
+            msg := server.EncodeServerMessage(&message.HostAdd{Name: g.host.Name})
             g.server.MessagePlayer(msg, name)
         }
     }

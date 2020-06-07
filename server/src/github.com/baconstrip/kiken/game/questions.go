@@ -92,12 +92,12 @@ func CollateFullCategories(questions []*Question) ([]*Category, error) {
     }
 
     // Removed while the value inferring capabillity is sitll broken.
-    //for _, cat := range categories {
-    //    err := inferValue(cat)
-    //    if err != nil {
-    //        log.Printf("failed to infer value for category %v, %v", cat.Name, err)
-    //    }
-    //}
+//    for _, cat := range categories {
+//        err := inferValue(cat)
+//        if err != nil {
+//            log.Printf("failed to infer value for category %v, %v", cat.Name, err)
+//        }
+//    }
     return categories, nil
 }
 

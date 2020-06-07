@@ -1,8 +1,8 @@
 package game
 
 import (
-    "log"
     "fmt"
+    "log"
 )
 
 // inferValue computes the value of a question to match standard values, in the
@@ -38,55 +38,64 @@ func inferValue(cat *Category) error {
         outlier = dupe[0]
     }
 
-    var possibleValues []int
+    var possibleValues [][]int
     // TODO support non-standard values via configuration.
     if cat.Questions[0].Round == ICHIBAN {
-        possibleValues = []int{200, 400, 600, 800, 1000}
+        possibleValues = [][]int{[]int{200, 400, 600, 800, 1000}, []int{100, 200, 300, 400, 500}}
     } else if cat.Questions[0].Round == NIBAN {
-        possibleValues = []int{400, 800, 1200, 1600, 2000}
+        possibleValues = [][]int{[]int{400, 800, 1200, 1600, 2000}, []int{200, 400, 600, 800, 1000}}
     } else {
         return fmt.Errorf("can only be used on standard questions")
     }
 
-    foundValues := []bool{false, false, false, false, false}
-    if outlier == nil {
-        invalidValue := 0
-        for val, _ := range buckets {
-            found := false
-            for i, v := range possibleValues {
-                if val == v {
-                    found = true
-                    foundValues[i] = true
+    bad := false
+Solve:
+    for _, poss := range possibleValues {
+        foundValues := []bool{false, false, false, false, false}
+        if outlier == nil {
+            invalidValue := 0
+            for val, _ := range buckets {
+                found := false
+                for i, v := range poss {
+                    if val == v {
+                        found = true
+                        foundValues[i] = true
+                        break
+                    }
+                }
+
+                if !found {
+                    if invalidValue != 0 {
+                        if bad {
+                            return fmt.Errorf("too many outliers, cannot infer values, buckets: %v, round %v", buckets, buckets[val][0].Round)
+                        }
+                        bad = true
+                        continue Solve
+
+                    }
+                    invalidValue = val
+                }
+            }
+
+            allPresent := true
+            for _, found := range foundValues {
+                if !found {
+                    allPresent = false
                     break
                 }
             }
-
-            if !found {
-                if invalidValue != 0 {
-                    return fmt.Errorf("too many outliers, cannot infer values, buckets: %v, round %v", buckets, buckets[val][0].Round)
-                }
-                invalidValue = val
+            if allPresent {
+                return nil
             }
         }
+        log.Printf("Found outlier: %v, possible values: %v", outlier, poss)
 
-        allPresent := true
-        for _, found := range foundValues {
+
+        for i, found := range foundValues {
             if !found {
-                allPresent = false
-                break
+                outlier.Value = poss[i]
+                return nil
             }
-        }
-        if allPresent {
-            return nil
-        }
-        outlier = buckets[invalidValue][0]
-        log.Println("buckets: %+v, invalidValue: %v", buckets, invalidValue)
-    }
-
-
-    for i, found := range foundValues {
-        if !found {
-            outlier.Value = possibleValues[i]
         }
     }
     return nil

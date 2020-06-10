@@ -2,7 +2,6 @@ package game
 
 import (
     "fmt"
-    "log"
 )
 
 var potentialValueRanges = [][]int {

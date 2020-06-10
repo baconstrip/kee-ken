@@ -28,8 +28,8 @@ type Round int
 
 const (
     UNKNOWN Round = iota
-    ICHIBAN
-    NIBAN
+    DAIICHI
+    DAINI
     OWARI
     TIEBREAKER
 )

@@ -40,9 +40,9 @@ func inferValue(cat *Category) error {
 
     var possibleValues [][]int
     // TODO support non-standard values via configuration.
-    if cat.Questions[0].Round == ICHIBAN {
+    if cat.Questions[0].Round == DAIICHI {
         possibleValues = [][]int{[]int{200, 400, 600, 800, 1000}, []int{100, 200, 300, 400, 500}}
-    } else if cat.Questions[0].Round == NIBAN {
+    } else if cat.Questions[0].Round == DAINI {
         possibleValues = [][]int{[]int{400, 800, 1200, 1600, 2000}, []int{200, 400, 600, 800, 1000}}
     } else {
         return fmt.Errorf("can only be used on standard questions")

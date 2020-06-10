@@ -45,31 +45,31 @@ func main() {
 
     log.Printf("Loaded %v standard categories, %v Owari, %v Tiebreaker.", len(standardCategories), len(owariCategories), len(tiebreakerCategories))
 
-    // For testing, create a board of the first 5 categories from ichiban/niban,
+    // For testing, create a board of the first 5 categories from daiichi/daini,
     // and a question from owari.
-    ichibanCount, nibanCount := 0, 0
-    var ichibanCats, nibanCats []*game.Category
+    daiichiCount, dainiCount := 0, 0
+    var daiichiCats, dainiCats []*game.Category
 
     for _, c := range standardCategories{
-        if ichibanCount == 5 && nibanCount == 5 {
+        if daiichiCount == 5 && dainiCount == 5 {
             break
         }
 
-        if ichibanCount < 5  && c.Round == game.ICHIBAN {
-            ichibanCats = append(ichibanCats, c)
-            ichibanCount++
+        if daiichiCount < 5  && c.Round == game.DAIICHI {
+            daiichiCats = append(daiichiCats, c)
+            daiichiCount++
         }
-        if nibanCount < 5  && c.Round == game.NIBAN {
-            nibanCats = append(nibanCats, c)
-            nibanCount++
+        if dainiCount < 5  && c.Round == game.DAINI {
+            dainiCats = append(dainiCats, c)
+            dainiCount++
         }
     }
 
-    ichibanBoard := game.NewBoard(game.ICHIBAN, ichibanCats...)
-    nibanBoard := game.NewBoard(game.NIBAN, nibanCats...)
+    daiichiBoard := game.NewBoard(game.DAIICHI, daiichiCats...)
+    dainiBoard := game.NewBoard(game.DAINI, dainiCats...)
     owariBoard := game.NewBoard(game.OWARI, owariCategories[0])
 
-    g := game.New(ichibanBoard, nibanBoard, owariBoard)
+    g := game.New(daiichiBoard, dainiBoard, owariBoard)
     log.Printf("Created test board: ")
 //    pretty.Print(g)
     pretty.Print(owariBoard)

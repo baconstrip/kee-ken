@@ -67,7 +67,7 @@ func LoadQuestions(path string) ([]*Question, error) {
 func CollateFullCategories(questions []*Question) ([]*Category, error) {
     var filteredQuestions []*Question
     for _, q := range questions {
-        if q.Round == ICHIBAN || q.Round == NIBAN {
+        if q.Round == DAIICHI || q.Round == DAINI {
             filteredQuestions = append(filteredQuestions, q)
         }
     }
@@ -283,19 +283,19 @@ func parseRound(q map[string]interface{}) (Round, error) {
     case string:
         r := strings.TrimSpace(strings.ToLower(round.(string)))
         if strings.HasPrefix(r, "j") {
-            return ICHIBAN, nil
+            return DAIICHI, nil
         }
         if strings.HasPrefix(r, "d") {
-            return NIBAN, nil
+            return DAINI, nil
         }
         if strings.HasPrefix(r, "f") {
             return OWARI, nil
         }
-        if r == "ichiban" {
-            return ICHIBAN, nil
+        if r == "daiichi" {
+            return DAIICHI, nil
         }
-        if r == "niban" {
-            return NIBAN, nil
+        if r == "daini" {
+            return DAINI, nil
         }
         if r == "owari" {
             return OWARI, nil

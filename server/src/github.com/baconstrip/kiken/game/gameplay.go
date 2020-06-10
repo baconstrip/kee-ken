@@ -527,7 +527,7 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
 // goroutine.
 func (g *GameDriver) Run() {
     g.gameState.mu.Lock()
-    g.gameState.currentRound = ICHIBAN
+    g.gameState.currentRound = DAIICHI
     g.gameState.currentStatus = STATUS_PRESTART
     g.gameState.mu.Unlock()
     for {

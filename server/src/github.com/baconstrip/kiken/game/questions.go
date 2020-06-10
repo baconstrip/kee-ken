@@ -92,7 +92,7 @@ func CollateFullCategories(questions []*Question) ([]*Category, error) {
     }
 
     for _, cat := range categories {
-        err := InferValues(cat)
+        err := FixValues(cat)
         if err != nil {
             log.Printf("failed to infer value for category %v, %v", cat.Name, err)
         }

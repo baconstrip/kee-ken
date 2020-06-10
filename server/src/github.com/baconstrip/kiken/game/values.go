@@ -2,6 +2,7 @@ package game
 
 import (
     "fmt"
+    "math"
 )
 
 var potentialValueRanges = [][]int {
@@ -10,10 +11,20 @@ var potentialValueRanges = [][]int {
     {400, 800, 1200, 1600, 2000},
 }
 
-// InferValues computes the value of a question to match standard values, in the
+// FixValues corrects duplicate values, fixes values that sit outside the
+// normal procession, and changes the values so that they match the numbers
+// used in normal play.
+func FixValues(cat *Category) error {
+    if err := inferValues(cat); err != nil {
+        return err
+    }
+    return targetRoundValues(cat)
+}
+
+// inferValues computes the value of a question to match standard values, in the
 // case that there questions with abnormal values. Modifies the questions in
 // place. Errors if it is unable to determine values for the category. 
-func InferValues(cat *Category) error {
+func inferValues(cat *Category) error {
     if len(cat.Questions) != 5 {
         return fmt.Errorf("can only infer values when a category has exactly 5 questions, got %v", len(cat.Questions))
     }
@@ -122,4 +133,41 @@ func normalize(cat *Category) error {
     }
 
     return nil
+}
+
+func doubleValues(cat *Category) {
+    for _, q := range cat.Questions {
+        q.Value = q.Value * 2
+    }
+}
+
+// targetRoundValues attempts to adjust the values of a category to match the
+// values for the round its in.
+func targetRoundValues(cat *Category) error {
+    if len(cat.Questions) != 5 {
+        return fmt.Errorf("can only target values when a category has exactly 5 questions, got %v", len(cat.Questions))
+    }
+
+    round := cat.Questions[0].Round
+
+    // Since the questions have already been fixed, we can take the lowest value
+    // question and use it as a basis.
+    min := math.MaxInt32
+    for _, q := range cat.Questions {
+        if q.Value < min {
+            min = q.Value
+        }
+    }
+
+    // If they're already correct, we're done.
+    if round == DAIICHI && min == 200 || round == DAINI && min == 400 {
+        return nil
+    }
+
+    if round == DAIICHI && min == 100 || round == DAINI && min == 200 {
+        doubleValues(cat)
+        return nil
+    }
+
+    return fmt.Errorf("unable to determine correct range for values in category")
 }

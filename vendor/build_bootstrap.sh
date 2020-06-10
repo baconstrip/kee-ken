@@ -11,5 +11,5 @@ cd $1
 sudo npm install
 npm run dist
 
-cp -r dist/css/* ../../webcontent/static/css/bootstrap
-cp -r dist/js/* ../../webcontent/static/js/bootstrap
+cp -r dist/css/* ../../webcontent/static/css/vendor/bootstrap
+cp -r dist/js/* ../../webcontent/static/js/vendor/bootstrap

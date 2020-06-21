@@ -6,6 +6,8 @@ import (
     "time"
     "os"
 
+    "math/rand"
+
     "github.com/kr/pretty"
 
     "github.com/baconstrip/kiken/game"
@@ -67,7 +69,8 @@ func main() {
 
     daiichiBoard := game.NewBoard(game.DAIICHI, daiichiCats...)
     dainiBoard := game.NewBoard(game.DAINI, dainiCats...)
-    owariBoard := game.NewBoard(game.OWARI, owariCategories[0])
+    rand.Seed(time.Now().Unix())
+    owariBoard := game.NewBoard(game.OWARI, owariCategories[rand.Intn(len(owariCategories))])
 
     g := game.New(daiichiBoard, dainiBoard, owariBoard)
     log.Printf("Created test board: ")

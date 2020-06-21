@@ -50,5 +50,8 @@ Vue.component('progressbar', {
     },
     created: function () {
         EventBus.$on("beginCountdown", this.beginCountdown); 
-    }
+    },
+    beforeDestroy: function() {
+        EventBus.$off("beginCountdown", this.beginCountdown);
+    },
 });

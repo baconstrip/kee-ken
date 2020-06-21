@@ -122,6 +122,21 @@ type AuthSuccess struct {
     Msg string
 }
 
+// BeginOwari is sent to the clients to indicate the beginning of the endgame.
+// It contains a single category with a single question.
+type BeginOwari struct {
+    Category *CategoryOverview
+}
+
+// ShowOwariPrompt is sent to the clients to begin entries for Owari.
+type ShowOwariPrompt struct {
+    Prompt *QuestionPrompt
+}
+
+type ShowOwariResults struct {
+    Answers map[string]string
+}
+
 // ------- BEGIN CLIENT MESSAGES --------
 
 // AuthInfo defines a message that the client sends to the server to provide
@@ -168,6 +183,18 @@ type AttemptAnswer struct {
     // Amount of time between processing the request to when the client pressed
     // a button requesting to answer, as measured by the client.
     ResponseTime int
+}
+
+// EnterBid is a message that a player sends when prompted to wager an amount
+// of money.
+type EnterBid struct {
+    Money int
+}
+
+// FreeformAnswer is a message that a player sends to enter a free form text
+// message.
+type FreeformAnswer struct {
+    Message string
 }
 
 type ClientTestMessage struct {

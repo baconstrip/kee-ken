@@ -143,29 +143,6 @@ func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
 
     s.listenerManager.dispatchJoin(vars.name, vars.host)
 
-//    overview := s.ga.Boards[0].Snapshot().ToBoardOverview()
-//
-//    s.sessionManager.writeMessage(sid, encodeServerMessage(overview))
-//
-//    playerAdded := &message.PlayerAdded{
-//        Name: vars.name,
-//        Money: 0,
-//    }
-//
-//    s.sessionManager.messageAll(encodeServerMessage(playerAdded))
-//
-//    // Wait 4 seconds, then send a question to the client, for testing.
-//    time.Sleep(4*time.Second)
-//
-//    q := s.ga.Boards[0].Snapshot().Categories[0].Questions[0].ToQuestionPrompt()
-//    s.sessionManager.writeMessage(sid, encodeServerMessage(q))
-//
-//    // Wait 4 seconds, then send a question to the client, for testing.
-//    time.Sleep(4*time.Second)
-//
-//    q = s.ga.Boards[0].Snapshot().Categories[0].Questions[1].ToQuestionPrompt()
-//    s.sessionManager.writeMessage(sid, encodeServerMessage(q))
-
     // Wait forever
     for {
         time.Sleep(10*time.Minute)

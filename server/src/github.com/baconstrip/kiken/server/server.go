@@ -110,22 +110,24 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if s.sessionManager.userExists(authInfo.Name, true) {
-        if s.sessionManager.correctPasscode(authInfo.Name, true, passcode) {
-            err = s.sessionManager.createSession(SessionVar{
-                name: authInfo.Name,
-                passcode: authInfo.Passcode,
-                host: false,
-            }, w)
-            if err != nil {
-                log.Printf("Failed to create session for returning player: %v", err)
-                writeError(w, "Bad request", 1019)
-            }
+        if !authInfo.Host{
+            if s.sessionManager.correctPasscode(authInfo.Name, true, passcode) {
+                err = s.sessionManager.createSession(SessionVar{
+                    name: authInfo.Name,
+                    passcode: authInfo.Passcode,
+                    host: false,
+                }, w)
+                if err != nil {
+                    log.Printf("Failed to create session for returning player: %v", err)
+                    writeError(w, "Bad request", 1019)
+                }
 
-            writeJSON(w, &message.AuthSuccess{"Successfully rejoined as player"})
-            return
-        } else {
-            writeError(w, "Incorrect passcode", 1015)
-            return
+                writeJSON(w, &message.AuthSuccess{"Successfully rejoined as player"})
+                return
+            } else {
+                writeError(w, "Incorrect passcode", 1015)
+                return
+            }
         }
     }
 
@@ -210,6 +212,14 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
         value = &m
     case "MarkAnswer":
         m := message.MarkAnswer{}
+        err = d.Decode(&m)
+        value = &m
+    case "EnterBid":
+        m := message.EnterBid{}
+        err = d.Decode(&m)
+        value = &m
+    case "FreeformAnswer":
+        m := message.FreeformAnswer{}
         err = d.Decode(&m)
         value = &m
     default:

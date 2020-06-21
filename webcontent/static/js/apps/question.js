@@ -1,6 +1,6 @@
 questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="dialog" data-backdrop="static">
   <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content" style="color: black">
+    <div class="modal-content" style="color: black" id="prompt-modal">
       <div class="modal-header">
         <h5 class="modal-title">Question</h5>
       </div>
@@ -40,12 +40,53 @@ Vue.component('questionWindow', {
         return {
             lastStart: '',
             progressComponent: "progressbar",
+            penalty: null,
+            lockedInterval: null,
         }
     },
     template: questionTemplate,
     methods: {
         recordStart: function() {
             this.lastStart = new Date();
+        },
+        spacePress: function() {
+            var baseVue = this;
+            if (this.responsesClosed || this.answeringPlayer){
+                return;
+            }
+            if (!this.penalty && this.lastStart && !this.answeringPlayer) {
+                this.finishTimer();
+                return;
+            } else if (new Date() > this.penalty && this.lastStart && !this.answeringPlayer) {
+                this.finishTimer();
+                return;
+            }
+            console.log("Locked out due to penalty");
+            $('#question-modal').addClass('penalty').delay(1000).queue(function() {
+                $(this).removeClass('penalty');
+                $(this).dequeue();
+            });
+
+            var baseVue = this;
+            if (!this.lockedInterval) {
+                $('#prompt-modal').addClass('lockedout');
+                baseVue.lockedInterval = setInterval(function() {
+                    if (new Date() > baseVue.penalty) {
+                        $('#prompt-modal').removeClass('lockedout');
+                        clearInterval(baseVue.lockedInterval);
+                        baseVue.lockedInterval = null;
+                    }
+                }, 80);
+            }
+           
+            if (!this.penalty) {
+                console.log("starting penalty");
+                var dt = new Date()
+                dt.setSeconds(dt.getSeconds() + 1);
+                this.penalty = dt;
+            } else {
+                this.penalty.setSeconds(this.penalty.getSeconds() + 1.5);
+            }
         },
         finishTimer: function() {
             console.log("Button press took: ", ( new Date() - this.lastStart));
@@ -56,13 +97,13 @@ Vue.component('questionWindow', {
 
             this.$emit("buzz", delta);
         },
-        beginCountdown: function(e) {
-            this.lastStart = '';
-        },
     },
     created: function() {
-        EventBus.$on("spacePress", this.finishTimer);
-        EventBus.$on("beginCountdown", this.beginCountdown);
+        EventBus.$on("spacePress", this.spacePress);
+    },
+    beforeDestroy: function() {
+        console.log("cleaning up");
+        EventBus.$off("spacePress", this.spacePress);
     },
     mounted: function() {
         $("#question-modal").modal("show");

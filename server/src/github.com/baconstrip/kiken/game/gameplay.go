@@ -39,6 +39,7 @@ type GameDriver struct {
     players map[string]*PlayerStats
     host *PlayerStats
     quesState *questionPromptState
+    owariState *owariState
 }
 
 type questionPromptState struct {
@@ -50,6 +51,12 @@ type questionPromptState struct {
     playerAnswering string
 
     buzzTimeoutUnless unlessFunc
+}
+
+type owariState struct {
+    question *QuestionState
+    bids map[string]*int
+    answers map[string]string
 }
 
 type PlayerStats struct {
@@ -89,12 +96,42 @@ func (g *GameDriver) sendUpdatePlayers() {
 // view of the game board.
 // Callers must obtain a mutex before calling.
 func (g *GameDriver) sendUpdateBoard() {
+    // DO NOT SUBMIT for testing
+    if g.gameState.IsOwariState() {
+        g.sendOwari()
+        return
+    }
     b := g.gameState.CurrentBoard()
     if b == nil {
         return
     }
     overview := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
     g.server.MessageAll(overview)
+}
+
+func (g *GameDriver) sendOwari() {
+    cat := g.gameState.Boards[OWARI-1].Categories[0]
+    owari := server.EncodeServerMessage(&message.BeginOwari{Category: cat.Snapshot().ToCategoryOverview()})
+    g.server.MessageAll(owari)
+}
+
+
+// showOwariPrompt should only be called after obtaining the mutex.
+func (g *GameDriver) showOwariPrompt() {
+    g.gameState.currentStatus = STATUS_OWARI_AWAIT_ANSWERS
+    ques := g.gameState.Boards[OWARI-1].Categories[0].Questions[0]
+    snap := ques.Snapshot()
+    hostPrompt := snap.ToQuestionPrompt(true)
+    playerPrompt := snap.ToQuestionPrompt(false)
+    g.server.MessagePlayers(server.EncodeServerMessage(&message.ShowOwariPrompt{Prompt: playerPrompt}))
+    g.server.MessageHost(server.EncodeServerMessage(&message.ShowOwariPrompt{Prompt: hostPrompt}))
+}
+
+// showOwariAnswers should only be called after obtaining the mutex.
+func (g *GameDriver) showOwariAnswers() {
+    g.gameState.currentStatus = STATUS_SHOWING_OWARI
+    msg := message.ShowOwariResults{Answers: g.owariState.answers}
+    g.server.MessageAll(server.EncodeServerMessage(&msg))
 }
 
 // playerSelecting returns the Stats struct of the player that is currently
@@ -108,6 +145,7 @@ func (g *GameDriver) playerSelecting() *PlayerStats {
     }
     return nil
 }
+
 
 
 // ------ BEGIN LISTENERS -----
@@ -126,6 +164,8 @@ func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
     }
     msg := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
     g.server.MessagePlayer(msg, name)
+    // DO NOT SUBMIT for testing
+    g.sendOwari()
 
     return nil
 }
@@ -134,10 +174,18 @@ func (g *GameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool)
     g.gameState.mu.Lock()
     defer g.gameState.mu.Unlock()
 
+    if g.gameState.currentStatus == STATUS_PLAYERS_ANSWERING || g.gameState.currentStatus == STATUS_PRESENTING_QUESTION || g.gameState.currentStatus == STATUS_PLAYERS_BUZZING {
+        snap := g.quesState.question.Snapshot()
+        prompt := snap.ToQuestionPrompt(host)
+        g.server.MessagePlayer(server.EncodeServerMessage(prompt), name)
+     }
+
     // If a player is returning.
     if _, ok := g.players[name]; ok {
         g.players[name].Connected = true
         g.sendUpdatePlayers()
+        msg := server.EncodeServerMessage(&message.HostAdd{Name: g.host.Name})
+        g.server.MessagePlayer(msg, name)
         return nil
     }
 
@@ -151,20 +199,18 @@ func (g *GameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool)
 
     if host {
         g.host = &PlayerStats{Money: 0, Name: name, Connected: true}
-    } else {
-        g.players[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
-        if g.host != nil {
-            msg := server.EncodeServerMessage(&message.HostAdd{Name: g.host.Name})
-            g.server.MessagePlayer(msg, name)
-        }
-    }
-
-    if host {
         g.sendUpdatePlayers()
         msg := server.EncodeServerMessage(&message.HostAdd{Name: name})
         g.server.MessageAll(msg)
         return nil
     }
+
+    g.players[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
+    if g.host != nil {
+        msg := server.EncodeServerMessage(&message.HostAdd{Name: g.host.Name})
+        g.server.MessagePlayer(msg, name)
+    }
+
     g.sendUpdatePlayers()
     return nil
 }
@@ -222,7 +268,7 @@ func (g *GameDriver) OnStartGameMessageStartGame(name string, host bool, msg mes
 
     if len(g.players) == 0 {
 
-        e := server.EncodeServerMessage(message.ServerError{Error: "Please wait for players to join before starting", Code: 2001})
+        e := server.EncodeServerMessage(&message.ServerError{Error: "Please wait for players to join before starting", Code: 2001})
         g.server.MessagePlayer(e, name)
         return nil
     }
@@ -420,8 +466,72 @@ func (g *GameDriver) OnNextRoundMessageAdvanceRound(name string, host bool, msg 
     }
 
     g.gameState.currentRound = g.gameState.currentRound + 1
+    if g.gameState.currentRound == OWARI {
+        g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
+    }
 
     g.sendUpdateBoard()
+
+    return nil
+}
+
+func (g *GameDriver) OnEnterBidAddBid(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if host {
+        return nil
+    }
+    bid := msg.Data.(*message.EnterBid).Money
+
+    g.owariState.bids[name] = &bid
+
+    // Check to see if all bids are in.
+    found := true
+    for n, _ := range g.players {
+        if _, ok := g.owariState.bids[n]; !ok {
+            found = false
+        }
+    }
+
+    if !found {
+        return nil
+    }
+    log.Printf("All bids are in")
+
+    g.showOwariPrompt()
+
+    return nil
+}
+
+func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg message.ClientMessage) error {
+    g.gameState.mu.Lock()
+    defer g.gameState.mu.Unlock()
+
+    if host {
+        return nil
+    }
+
+    if g.gameState.currentStatus != STATUS_OWARI_AWAIT_ANSWERS {
+        return nil
+    }
+
+    ans := msg.Data.(*message.FreeformAnswer).Message
+    g.owariState.answers[name] = ans
+    // Check to see if all answers are in.
+    found := true
+    for n, _ := range g.players {
+        if _, ok := g.owariState.answers[n]; !ok {
+            found = false
+        }
+    }
+
+    if !found {
+        return nil
+    }
+    log.Printf("All answers are in")
+
+    g.showOwariAnswers()
 
     return nil
 }
@@ -508,6 +618,7 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
         listenerManager: lm,
         players: make(map[string]*PlayerStats),
         config: config,
+        owariState: &owariState{bids: make(map[string]*int), answers: make(map[string]string)},
     }
 
     lm.RegisterJoin(g.OnJoinSendBoard)
@@ -520,6 +631,9 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
     lm.RegisterMessage("MarkAnswer", g.OnMarkAnswerMessageMoveAlong)
     lm.RegisterMessage("MoveOn", g.OnMoveOnMessageShowBoard)
     lm.RegisterMessage("NextRound", g.OnNextRoundMessageAdvanceRound)
+    lm.RegisterMessage("EnterBid", g.OnEnterBidAddBid)
+    lm.RegisterMessage("FreeformAnswer", g.OnFreeformAnswerAddAnswerOwari)
+
     return g
 }
 
@@ -528,7 +642,9 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
 func (g *GameDriver) Run() {
     g.gameState.mu.Lock()
     g.gameState.currentRound = DAIICHI
+    // DO NOT SUBMIT for testing
     g.gameState.currentStatus = STATUS_PRESTART
+    //g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
     g.gameState.mu.Unlock()
     for {
         time.Sleep(10 * time.Millisecond)

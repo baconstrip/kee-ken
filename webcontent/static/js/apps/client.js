@@ -19,6 +19,7 @@ gameTemplate = `<div id="app" class="container">
 <component
     v-bind:is="questionComponent"
     v-bind:question="question"
+    v-if="questionComponent"
     :key="question"
     v-bind:answer="answer"
     v-bind:duration="duration"
@@ -30,6 +31,15 @@ gameTemplate = `<div id="app" class="container">
     v-on:moveOn="sendMoveOn"
     v-on:buzz="sendBuzz">
 </component>
+<owari
+    v-if="owari"
+    v-on:submitBid="sendBid"
+    v-on:submitAnswer="sendOwariAnswer"
+    v-bind:category="owari"
+    v-bind:prompt="owariPrompt"
+    v-bind:answers="owariAnswers"
+    v-bind:host="host">
+</owari>
 <auth-window v-bind:host="host" v-on:auth-ready="join()" v-if="!joined">
 </auth-window>
 <alertbox v-bind:message="gameErrors" v-if="gameErrors">
@@ -55,6 +65,10 @@ new Vue({
         question: '',
         answer: '',
         players: {},
+
+        owari: null,
+        owariPrompt: null,
+        owariAnswers: null,
 
         questionComponent: null,
 
@@ -121,6 +135,15 @@ new Vue({
                 if (msg["Type"] == "ServerError") {
                     baseVue.gameErrors = msg["Data"].Error;
                     setTimeout(() => { baseVue.gameErrors = '' }, 10000);
+                }
+                if (msg["Type"] == "BeginOwari") {
+                    baseVue.owari = msg["Data"].Category;
+                }
+                if (msg["Type"] == "ShowOwariPrompt") {
+                    baseVue.owariPrompt = msg["Data"].Prompt;
+                }
+                if (msg["Type"] == "ShowOwariResults") {
+                    baseVue.owariAnswers = msg["Data"].Answers;
                 }
             };
             this.ws.onerror = function(e) {
@@ -192,7 +215,23 @@ new Vue({
                     Data: {},
                 })
             );
-        }
+        },
+        sendBid: function(e) {
+            this.ws.send(
+                JSON.stringify({
+                    Type: "EnterBid",
+                    Data: {Money: Number(e)},
+                })
+            );
+        },
+        sendOwariAnswer: function(e) {
+            this.ws.send(
+                JSON.stringify({
+                    Type: "FreeformAnswer",
+                    Data: {Message: e},
+                })
+            );
+        },
     },
     created: function() {
         if ($("#is-host").val()) {

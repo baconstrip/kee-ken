@@ -13,6 +13,10 @@ body {
   color: #111;
 }
 
+#owari-board {
+  background-color: #22a; !important
+}
+
 tr {
   width: 20%;
 }
@@ -30,3 +34,17 @@ th {
   width: 30%;
   height: 20px;
 } 
+
+@keyframes flash {
+  from {background-color: red}
+  to {}
+}
+
+.penalty {
+  animation-name: flash;
+  animation-duration: 1s;
+}
+
+.lockedout {
+  background-color: orange;
+}

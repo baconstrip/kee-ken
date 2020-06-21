@@ -22,7 +22,17 @@ const (
     STATUS_PLAYERS_ANSWERING
     // Question has been answered or timed out, but is still being shown.
     STATUS_POST_QUESTION
+    // Accepting bids and showing category for Owari.
+    STATUS_ACCEPTING_BIDS
+    // Waiting for answers in Owari.
+    STATUS_OWARI_AWAIT_ANSWERS
+    // Showing answers for Owari.
+    STATUS_SHOWING_OWARI
 )
+
+func (g *GameState) IsOwariState() bool {
+    return g.currentStatus == STATUS_ACCEPTING_BIDS || g.currentStatus == STATUS_OWARI_AWAIT_ANSWERS || g.currentStatus == STATUS_SHOWING_OWARI
+}
 
 type Round int
 

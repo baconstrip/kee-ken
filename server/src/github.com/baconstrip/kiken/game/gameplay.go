@@ -55,7 +55,7 @@ type questionPromptState struct {
 
 type owariState struct {
     question *QuestionState
-    bids map[string]*int
+    bids map[string]int
     answers map[string]string
 }
 
@@ -130,7 +130,7 @@ func (g *GameDriver) showOwariPrompt() {
 // showOwariAnswers should only be called after obtaining the mutex.
 func (g *GameDriver) showOwariAnswers() {
     g.gameState.currentStatus = STATUS_SHOWING_OWARI
-    msg := message.ShowOwariResults{Answers: g.owariState.answers}
+    msg := message.ShowOwariResults{Answers: g.owariState.answers, Bids: g.owariState.bids}
     g.server.MessageAll(server.EncodeServerMessage(&msg))
 }
 
@@ -484,7 +484,7 @@ func (g *GameDriver) OnEnterBidAddBid(name string, host bool, msg message.Client
     }
     bid := msg.Data.(*message.EnterBid).Money
 
-    g.owariState.bids[name] = &bid
+    g.owariState.bids[name] = bid
 
     // Check to see if all bids are in.
     found := true
@@ -618,7 +618,7 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
         listenerManager: lm,
         players: make(map[string]*PlayerStats),
         config: config,
-        owariState: &owariState{bids: make(map[string]*int), answers: make(map[string]string)},
+        owariState: &owariState{bids: make(map[string]int), answers: make(map[string]string)},
     }
 
     lm.RegisterJoin(g.OnJoinSendBoard)
@@ -642,9 +642,7 @@ func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, 
 func (g *GameDriver) Run() {
     g.gameState.mu.Lock()
     g.gameState.currentRound = DAIICHI
-    // DO NOT SUBMIT for testing
     g.gameState.currentStatus = STATUS_PRESTART
-    //g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
     g.gameState.mu.Unlock()
     for {
         time.Sleep(10 * time.Millisecond)

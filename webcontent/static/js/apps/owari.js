@@ -17,7 +17,7 @@ owariTemplate = `
     </form>
     <ul>
         <li v-for="(n, a) in answers" v-if="answers">
-            <em>{{ a }}: </em>{{ n }}
+            <em>{{ a }}: </em>{{ n }} (Bid: {{ bids[a] }})
         </li>
     </ul>
 </div>
@@ -25,7 +25,7 @@ owariTemplate = `
 
 Vue.component('owari', {
     template: owariTemplate,
-    props: ['category', 'host', 'prompt', 'answers'],
+    props: ['category', 'host', 'prompt', 'answers', 'bids'],
     data: function () {
         return {
             'submitted': false,

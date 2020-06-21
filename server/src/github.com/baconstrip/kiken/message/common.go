@@ -135,6 +135,7 @@ type ShowOwariPrompt struct {
 
 type ShowOwariResults struct {
     Answers map[string]string
+    Bids map[string]int
 }
 
 // ------- BEGIN CLIENT MESSAGES --------

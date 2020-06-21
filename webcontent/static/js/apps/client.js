@@ -38,6 +38,7 @@ gameTemplate = `<div id="app" class="container">
     v-bind:category="owari"
     v-bind:prompt="owariPrompt"
     v-bind:answers="owariAnswers"
+    v-bind:bids="owariBids"
     v-bind:host="host">
 </owari>
 <auth-window v-bind:host="host" v-on:auth-ready="join()" v-if="!joined">
@@ -69,6 +70,7 @@ new Vue({
         owari: null,
         owariPrompt: null,
         owariAnswers: null,
+        owariBids: null,
 
         questionComponent: null,
 
@@ -143,6 +145,7 @@ new Vue({
                     baseVue.owariPrompt = msg["Data"].Prompt;
                 }
                 if (msg["Type"] == "ShowOwariResults") {
+                    baseVue.owariBids = msg["Data"].Bids;
                     baseVue.owariAnswers = msg["Data"].Answers;
                 }
             };

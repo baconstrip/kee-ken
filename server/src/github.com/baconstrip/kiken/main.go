@@ -52,7 +52,7 @@ func main() {
     daiichiCount, dainiCount := 0, 0
     var daiichiCats, dainiCats []*game.Category
 
-    for _, c := range standardCategories{
+    for _, c := range standardCategories {
         if daiichiCount == 5 && dainiCount == 5 {
             break
         }
@@ -73,13 +73,10 @@ func main() {
     owariBoard := game.NewBoard(game.OWARI, owariCategories[rand.Intn(len(owariCategories))])
 
     g := game.New(daiichiBoard, dainiBoard, owariBoard)
-    log.Printf("Created test board: ")
-//    pretty.Print(g)
     pretty.Print(owariBoard)
     log.Printf("creating stateful game")
 
     gState := g.CreateState()
- //   pretty.Print(gState)
 
     lm := server.NewListenerManager()
 

@@ -284,7 +284,7 @@ func parseRound(q map[string]interface{}) (Round, error) {
         if strings.HasPrefix(r, "j") {
             return DAIICHI, nil
         }
-        if strings.HasPrefix(r, "d") {
+        if strings.HasPrefix(r, "do") {
             return DAINI, nil
         }
         if strings.HasPrefix(r, "f") {

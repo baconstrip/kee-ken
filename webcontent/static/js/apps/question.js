@@ -12,7 +12,7 @@ questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="d
       <div class="modal-body" v-if="answer">
         <p>{{ answer }}</p>
       </div>
-      <div class="modal-footer" v-if="answer">
+      <div class="modal-footer" v-if="host">
         <button type="button" class="btn btn-info" @click="$emit('finishReading')" v-if="!responsesClosed">Finish Reading</button>
         <button type="button" class="btn btn-success" @click="$emit('moveOn')" v-if="responsesClosed">Next Question</button>
       </div>
@@ -35,7 +35,7 @@ questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="d
 `
 
 Vue.component('questionWindow', {
-    props: ['question', 'answer',  'duration', 'answeringPlayer', 'responsesClosed'],
+    props: ['question', 'answer',  'duration', 'answeringPlayer', 'responsesClosed', 'host'],
     data: function() {
         return {
             lastStart: '',

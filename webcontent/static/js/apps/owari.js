@@ -1,6 +1,7 @@
 owariTemplate = `
 <div class="text-center" id="owari-board">
     <h3>Category: {{ category["Name"] }}</h3>
+    <alertbox v-bind:message="message" v-if="message"></alertbox>
     <form v-if="!submitted">
         <div class="form-group">
             <label for="bid">Bid Amount</label> 
@@ -25,16 +26,26 @@ owariTemplate = `
 
 Vue.component('owari', {
     template: owariTemplate,
-    props: ['category', 'host', 'prompt', 'answers', 'bids'],
+    props: ['category', 'host', 'prompt', 'answers', 'bids', 'money'],
     data: function () {
         return {
             'submitted': false,
             'ansSubmitted': false,
+            'message': null,
         }
     },
     methods: {
         submit: function() {
-            this.$emit("submitBid", $('#bid-amount').val());
+            var amount  = Number($('#bid-amount').val());
+            if (amount < 0) {
+                this.message = "Enter a positive value";
+                return;
+            }
+            if (amount > money) {
+                this.message = "Enter a value less than the amount you have";
+                return;
+            }
+            this.$emit("submitBid", amount);
             this.submitted = true;
         },
         sendAnswer: function() {

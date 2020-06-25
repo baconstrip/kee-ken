@@ -5,6 +5,7 @@ import (
     "math"
     "fmt"
     "log"
+    "math"
     "math/rand"
 
     "github.com/baconstrip/kiken/server"
@@ -164,8 +165,6 @@ func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
     }
     msg := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
     g.server.MessagePlayer(msg, name)
-    // DO NOT SUBMIT for testing
-    g.sendOwari()
 
     return nil
 }
@@ -348,7 +347,6 @@ func (g *GameDriver) OnFinishReadingMessageBeginCountdown(name string, host bool
     }
     g.server.MessageAll(server.EncodeServerMessage(&resp))
     g.gameState.currentStatus = STATUS_PLAYERS_BUZZING
-    log.Printf("all players counting down")
     g.quesState.questionOpened = time.Now()
 
     unless := runAfterUnless(g.config.ChanceTime, g.TimedTimeOutBuzzing)
@@ -470,7 +468,24 @@ func (g *GameDriver) OnNextRoundMessageAdvanceRound(name string, host bool, msg 
         g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
     }
 
+    lowestValue := math.MaxInt32
+    lowestPlayer := ""
+    for _, ply := range g.players {
+        ply.Selecting = false
+        if !ply.Connected {
+            continue
+        }
+
+        if ply.Money < lowestValue {
+            lowestValue = ply.Money
+            lowestPlayer = ply.Name
+        }
+    }
+
+    g.players[lowestPlayer].Selecting = true
+
     g.sendUpdateBoard()
+    g.sendUpdatePlayers()
 
     return nil
 }
@@ -486,10 +501,20 @@ func (g *GameDriver) OnEnterBidAddBid(name string, host bool, msg message.Client
 
     g.owariState.bids[name] = bid
 
+    // If the bid is less than the amount they have or negative ignore it.
+    currentMoney := g.players[name].Money
+    if bid > currentMoney || currentMoney < 0 || bid < 0 {
+        return nil
+    }
+
     // Check to see if all bids are in.
     found := true
-    for n, _ := range g.players {
+    for n, ply := range g.players {
         if _, ok := g.owariState.bids[n]; !ok {
+            // Ignore players with zero or negative money.
+            if ply.Money <= 0 {
+                continue
+            }
             found = false
         }
     }
@@ -497,8 +522,8 @@ func (g *GameDriver) OnEnterBidAddBid(name string, host bool, msg message.Client
     if !found {
         return nil
     }
-    log.Printf("All bids are in")
 
+    log.Printf("All bids are in")
     g.showOwariPrompt()
 
     return nil

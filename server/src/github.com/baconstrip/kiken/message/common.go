@@ -126,6 +126,8 @@ type AuthSuccess struct {
 // It contains a single category with a single question.
 type BeginOwari struct {
     Category *CategoryOverview
+    // The money the client currently has. This is a hack.
+    Money int
 }
 
 // ShowOwariPrompt is sent to the clients to begin entries for Owari.

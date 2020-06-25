@@ -366,6 +366,13 @@ func (g *GameDriver) OnAttemptAnswerMessageAllowAnswer(name string, host bool, m
         return nil
     }
 
+    // Players who have already tried to answer may not try again.
+    for _, n := range g.quesState.alreadyAnswered {
+        if n == name {
+            return
+        }
+    }
+
     time := msg.Data.(*message.AttemptAnswer).ResponseTime
     if dur, ok := g.quesState.attemptedBuzzes[name]; ok {
         if dur < time {

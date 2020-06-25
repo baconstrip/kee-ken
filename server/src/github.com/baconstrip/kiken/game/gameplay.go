@@ -5,7 +5,6 @@ import (
     "math"
     "fmt"
     "log"
-    "math"
     "math/rand"
 
     "github.com/baconstrip/kiken/server"
@@ -97,7 +96,6 @@ func (g *GameDriver) sendUpdatePlayers() {
 // view of the game board.
 // Callers must obtain a mutex before calling.
 func (g *GameDriver) sendUpdateBoard() {
-    // DO NOT SUBMIT for testing
     if g.gameState.IsOwariState() {
         g.sendOwari()
         return
@@ -112,10 +110,13 @@ func (g *GameDriver) sendUpdateBoard() {
 
 func (g *GameDriver) sendOwari() {
     cat := g.gameState.Boards[OWARI-1].Categories[0]
-    owari := server.EncodeServerMessage(&message.BeginOwari{Category: cat.Snapshot().ToCategoryOverview()})
-    g.server.MessageAll(owari)
+    owari := message.BeginOwari{Category: cat.Snapshot().ToCategoryOverview()}
+    for _, ply := range g.players {
+        plyOwari := owari
+        plyOwari.Money = ply.Money
+        g.server.MessagePlayer(server.EncodeServerMessage(&plyOwari), ply.Name)
+    }
 }
-
 
 // showOwariPrompt should only be called after obtaining the mutex.
 func (g *GameDriver) showOwariPrompt() {
@@ -546,6 +547,10 @@ func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg 
     // Check to see if all answers are in.
     found := true
     for n, _ := range g.players {
+        // Ignore players that didn't bid.
+        if _, ok := g.owariState.bids[n]; !ok {
+            continue
+        }
         if _, ok := g.owariState.answers[n]; !ok {
             found = false
         }

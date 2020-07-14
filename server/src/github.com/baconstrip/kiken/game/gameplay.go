@@ -369,7 +369,7 @@ func (g *GameDriver) OnAttemptAnswerMessageAllowAnswer(name string, host bool, m
     // Players who have already tried to answer may not try again.
     for _, n := range g.quesState.alreadyAnswered {
         if n == name {
-            return
+            return nil
         }
     }
 

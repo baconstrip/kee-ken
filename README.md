@@ -2,7 +2,7 @@
 
 ## Overview
 
-Kiken (pronounced "key-ken") is an open source real-time trivia game.
+Kee-ken is an open source real-time trivia game.
 
 ## License
 

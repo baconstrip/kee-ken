@@ -41,7 +41,7 @@ Vue.component('owari', {
                 this.message = "Enter a positive value";
                 return;
             }
-            if (amount > money) {
+            if (amount > this.money) {
                 this.message = "Enter a value less than the amount you have";
                 return;
             }

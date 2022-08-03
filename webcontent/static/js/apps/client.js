@@ -89,15 +89,15 @@ new Vue({
     methods: {
         send: function () {
         },
-        join: function() {
+        join: function () {
             var baseVue = this;
             $("#join-button").addClass("d-none");
             this.ws = new WebSocket('ws://' + window.location.host + '/player_game');
-            this.ws.onopen = function(e) {
+            this.ws.onopen = function (e) {
                 baseVue.joined = true;
                 errorMessages = "";
             };
-            this.ws.onmessage = function(e) {
+            this.ws.onmessage = function (e) {
                 var msg = JSON.parse(e.data);
                 console.log(msg);
                 baseVue.serverContent += msg;
@@ -153,13 +153,13 @@ new Vue({
                     baseVue.owariAnswers = msg["Data"].Answers;
                 }
             };
-            this.ws.onerror = function(e) {
+            this.ws.onerror = function (e) {
                 $("#join-button").removeClass("d-none");
                 baseVue.errorMessages = "Couldn't establish connection to the server.";
                 return;
             };
         },
-        sendSelect: function(e) {
+        sendSelect: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "SelectQuestion",
@@ -170,7 +170,7 @@ new Vue({
             );
             console.log(e);
         },
-        sendFinishReading: function(e) {
+        sendFinishReading: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "FinishReading",
@@ -178,7 +178,7 @@ new Vue({
                 })
             );
         },
-        sendBuzz: function(e) {
+        sendBuzz: function (e) {
             console.log(e);
             this.ws.send(
                 JSON.stringify({
@@ -189,7 +189,7 @@ new Vue({
                 })
             );
         },
-        sendMarkAnswer: function(e) {
+        sendMarkAnswer: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "MarkAnswer",
@@ -199,7 +199,7 @@ new Vue({
                 })
             );
         },
-        sendMoveOn: function(e) {
+        sendMoveOn: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "MoveOn",
@@ -207,7 +207,7 @@ new Vue({
                 })
             );
         },
-        sendNextRound: function(e) {
+        sendNextRound: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "NextRound",
@@ -215,7 +215,7 @@ new Vue({
                 })
             );
         },
-        sendStartGame: function(e) {
+        sendStartGame: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "StartGame",
@@ -223,24 +223,24 @@ new Vue({
                 })
             );
         },
-        sendBid: function(e) {
+        sendBid: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "EnterBid",
-                    Data: {Money: Number(e)},
+                    Data: { Money: Number(e) },
                 })
             );
         },
-        sendOwariAnswer: function(e) {
+        sendOwariAnswer: function (e) {
             this.ws.send(
                 JSON.stringify({
                     Type: "FreeformAnswer",
-                    Data: {Message: e},
+                    Data: { Message: e },
                 })
             );
         },
     },
-    created: function() {
+    created: function () {
         if ($("#is-host").val()) {
             this.host = true;
         }

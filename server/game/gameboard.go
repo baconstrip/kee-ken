@@ -1,55 +1,53 @@
 package game
 
 import (
-    "sort"
-    "fmt"
+	"fmt"
+	"sort"
 )
 
 // Game represents the non-stateful data of a game.
 type Game struct {
-    Boards []*Board
+	Boards []*Board
 }
 
 // Board represents the non-stateful data of Board.
 type Board struct {
-    Categories []*Category
-    // Points to questions where players are given an opportunity to wager on
-    // answer.
-    pachi []*Question
+	Categories []*Category
+	// Points to questions where players are given an opportunity to wager on
+	// answer.
+	pachi []*Question
 
-    Round Round
+	Round Round
 }
 
-func New(boards... *Board) (*Game) {
-    return &Game{
-        Boards: boards,
-    }
+func New(boards ...*Board) *Game {
+	return &Game{
+		Boards: boards,
+	}
 }
 
-func NewBoard(round Round, categories... *Category) (*Board) {
-    return &Board{
-        Categories: categories,
-        Round: round,
-    }
+func NewBoard(round Round, categories ...*Category) *Board {
+	return &Board{
+		Categories: categories,
+		Round:      round,
+	}
 }
 
-func NewCategory(questions... *Question) (*Category, error) {
-    var name string
-    for _, q := range questions {
-        if name != "" && name != q.Category {
-            return nil, fmt.Errorf("questions found from different categories: %v, %v", name, q.Category)
-        }
-        name = q.Category
-    }
+func NewCategory(questions ...*Question) (*Category, error) {
+	var name string
+	for _, q := range questions {
+		if name != "" && name != q.Category {
+			return nil, fmt.Errorf("questions found from different categories: %v, %v", name, q.Category)
+		}
+		name = q.Category
+	}
 
-    sort.Sort(ByValue(questions))
-    retVal := &Category {
-        Name: name,
-    }
+	sort.Sort(ByValue(questions))
+	retVal := &Category{
+		Name: name,
+	}
 
-    for _, q := range questions {
-        retVal.Questions = append(retVal.Questions, q)
-    }
+	retVal.Questions = append(retVal.Questions, questions...)
 
-    return retVal, nil
+	return retVal, nil
 }

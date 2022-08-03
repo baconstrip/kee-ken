@@ -1,18 +1,18 @@
 new Vue({
-    el: '#join-app',
+  el: '#join-app',
 
-    data: {
-    },
+  data: {
+  },
 
-    methods: {
-        clientJoin: function() {
-            window.location.href = window.location + "/client"
-        },
-        hostJoin: function() {
-            window.location.href = window.location + "/host"
-        },
+  methods: {
+    clientJoin: function () {
+      window.location.href = window.location + "/client"
     },
-    template: `<div class="row text-center">
+    hostJoin: function () {
+      window.location.href = window.location + "/host"
+    },
+  },
+  template: `<div class="row text-center">
       <div class="col">
         <button type="button" class="btn btn-large btn-info" id="join-button" @click="clientJoin()">Launch Client</button>
         <!--<button type="button" class="btn btn-large btn-disabled" id="join-button">Spectate</button> -->

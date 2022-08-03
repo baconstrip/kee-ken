@@ -11,6 +11,6 @@ playerListTemplate = `<div class="row">
 `
 
 Vue.component('playerlist', {
-    props: ['players'],
-    template: playerListTemplate,
+  props: ['players'],
+  template: playerListTemplate,
 });

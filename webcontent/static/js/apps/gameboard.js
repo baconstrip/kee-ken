@@ -26,47 +26,47 @@ gameboardTemplate = `<div class="row">
 </div>`
 
 Vue.component('gameboard', {
-    // board is the JSON representation of message.BoardOverview
-    props: ['board', 'host'],
-    template: gameboardTemplate,
-    watch: {
-        board: function(newVal, x) {
-            // Before we store the board, update it to sort questions by value.
-            newVal.Categories.forEach(c => c.Questions.sort((a,b) => a.Value > b.Value));
-            //[...Array(5).keys()].forEach(i => 
-            //    this.rows[i] = [...Array(5).keys()].map(j => newVal.Categories[j].Questions[i]));
-        },
+  // board is the JSON representation of message.BoardOverview
+  props: ['board', 'host'],
+  template: gameboardTemplate,
+  watch: {
+    board: function (newVal, x) {
+      // Before we store the board, update it to sort questions by value.
+      newVal.Categories.forEach(c => c.Questions.sort((a, b) => a.Value > b.Value));
+      //[...Array(5).keys()].forEach(i => 
+      //    this.rows[i] = [...Array(5).keys()].map(j => newVal.Categories[j].Questions[i]));
     },
-    methods: {
-        select: function (e) {
-            if (!this.host) {
-                return;
-            }
-            var elem = e.srcElement;
-            if (elem.tagName == "SPAN") {
-                elem = elem.parentElement;
-            }
-            var id = elem.attributes["qid"];
-            if (elem.attributes["played"]) {
-                return;
-            }
-            this.$emit("selectQuestion", id);
-        }
-    },
-    computed: {
-        showNext: function() {
-            if (!this.board) {
-                return '';
-            }
-            var unplayed = this.board.Categories.filter(c => c.Questions.filter(q => !q.Played).length > 0);
-            console.log(unplayed)
-            return unplayed.length == 0;
-        },
-        rows: function() {
-            if (!this.board) {
-                return;
-            }
-            return [...Array(5).keys()].map(i => [...Array(5).keys()].map(j => this.board.Categories[j].Questions[i]));
-        },
+  },
+  methods: {
+    select: function (e) {
+      if (!this.host) {
+        return;
+      }
+      var elem = e.srcElement;
+      if (elem.tagName == "SPAN") {
+        elem = elem.parentElement;
+      }
+      var id = elem.attributes["qid"];
+      if (elem.attributes["played"]) {
+        return;
+      }
+      this.$emit("selectQuestion", id);
     }
+  },
+  computed: {
+    showNext: function () {
+      if (!this.board) {
+        return '';
+      }
+      var unplayed = this.board.Categories.filter(c => c.Questions.filter(q => !q.Played).length > 0);
+      console.log(unplayed)
+      return unplayed.length == 0;
+    },
+    rows: function () {
+      if (!this.board) {
+        return;
+      }
+      return [...Array(5).keys()].map(i => [...Array(5).keys()].map(j => this.board.Categories[j].Questions[i]));
+    },
+  }
 });

@@ -35,8 +35,8 @@ Vue.component('owari', {
         }
     },
     methods: {
-        submit: function() {
-            var amount  = Number($('#bid-amount').val());
+        submit: function () {
+            var amount = Number($('#bid-amount').val());
             if (amount < 0) {
                 this.message = "Enter a positive value";
                 return;
@@ -48,7 +48,7 @@ Vue.component('owari', {
             this.$emit("submitBid", amount);
             this.submitted = true;
         },
-        sendAnswer: function() {
+        sendAnswer: function () {
             this.$emit("submitAnswer", $('#owari-answer').val());
             this.ansSubmitted = true;
         },

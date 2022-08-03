@@ -35,77 +35,77 @@ questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="d
 `
 
 Vue.component('questionWindow', {
-    props: ['question', 'answer',  'duration', 'answeringPlayer', 'responsesClosed', 'host'],
-    data: function() {
-        return {
-            lastStart: '',
-            progressComponent: "progressbar",
-            penalty: null,
-            lockedInterval: null,
-        }
+  props: ['question', 'answer', 'duration', 'answeringPlayer', 'responsesClosed', 'host'],
+  data: function () {
+    return {
+      lastStart: '',
+      progressComponent: "progressbar",
+      penalty: null,
+      lockedInterval: null,
+    }
+  },
+  template: questionTemplate,
+  methods: {
+    recordStart: function () {
+      this.lastStart = new Date();
     },
-    template: questionTemplate,
-    methods: {
-        recordStart: function() {
-            this.lastStart = new Date();
-        },
-        spacePress: function() {
-            var baseVue = this;
-            if (this.responsesClosed || this.answeringPlayer){
-                return;
-            }
-            if (!this.penalty && this.lastStart && !this.answeringPlayer) {
-                this.finishTimer();
-                return;
-            } else if (new Date() > this.penalty && this.lastStart && !this.answeringPlayer) {
-                this.finishTimer();
-                return;
-            }
-            console.log("Locked out due to penalty");
-            $('#question-modal').addClass('penalty').delay(1000).queue(function() {
-                $(this).removeClass('penalty');
-                $(this).dequeue();
-            });
+    spacePress: function () {
+      var baseVue = this;
+      if (this.responsesClosed || this.answeringPlayer) {
+        return;
+      }
+      if (!this.penalty && this.lastStart && !this.answeringPlayer) {
+        this.finishTimer();
+        return;
+      } else if (new Date() > this.penalty && this.lastStart && !this.answeringPlayer) {
+        this.finishTimer();
+        return;
+      }
+      console.log("Locked out due to penalty");
+      $('#question-modal').addClass('penalty').delay(1000).queue(function () {
+        $(this).removeClass('penalty');
+        $(this).dequeue();
+      });
 
-            var baseVue = this;
-            if (!this.lockedInterval) {
-                $('#prompt-modal').addClass('lockedout');
-                baseVue.lockedInterval = setInterval(function() {
-                    if (new Date() > baseVue.penalty) {
-                        $('#prompt-modal').removeClass('lockedout');
-                        clearInterval(baseVue.lockedInterval);
-                        baseVue.lockedInterval = null;
-                    }
-                }, 80);
-            }
-           
-            if (!this.penalty) {
-                console.log("starting penalty");
-                var dt = new Date()
-                dt.setSeconds(dt.getSeconds() + 1);
-                this.penalty = dt;
-            } else {
-                this.penalty.setSeconds(this.penalty.getSeconds() + 1.5);
-            }
-        },
-        finishTimer: function() {
-            console.log("Button press took: ", ( new Date() - this.lastStart));
-            var delta = new Date() - this.lastStart;
-            if (delta > this.duration) {
-                return;
-            }
+      var baseVue = this;
+      if (!this.lockedInterval) {
+        $('#prompt-modal').addClass('lockedout');
+        baseVue.lockedInterval = setInterval(function () {
+          if (new Date() > baseVue.penalty) {
+            $('#prompt-modal').removeClass('lockedout');
+            clearInterval(baseVue.lockedInterval);
+            baseVue.lockedInterval = null;
+          }
+        }, 80);
+      }
 
-            this.$emit("buzz", delta);
-        },
+      if (!this.penalty) {
+        console.log("starting penalty");
+        var dt = new Date()
+        dt.setSeconds(dt.getSeconds() + 1);
+        this.penalty = dt;
+      } else {
+        this.penalty.setSeconds(this.penalty.getSeconds() + 1.5);
+      }
     },
-    created: function() {
-        EventBus.$on("spacePress", this.spacePress);
+    finishTimer: function () {
+      console.log("Button press took: ", (new Date() - this.lastStart));
+      var delta = new Date() - this.lastStart;
+      if (delta > this.duration) {
+        return;
+      }
+
+      this.$emit("buzz", delta);
     },
-    beforeDestroy: function() {
-        console.log("cleaning up");
-        EventBus.$off("spacePress", this.spacePress);
-    },
-    mounted: function() {
-        $("#question-modal").modal("show");
-    },
+  },
+  created: function () {
+    EventBus.$on("spacePress", this.spacePress);
+  },
+  beforeDestroy: function () {
+    console.log("cleaning up");
+    EventBus.$off("spacePress", this.spacePress);
+  },
+  mounted: function () {
+    $("#question-modal").modal("show");
+  },
 });

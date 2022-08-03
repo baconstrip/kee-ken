@@ -16,15 +16,15 @@ Vue.component('progressbar', {
     },
     template: progressTemplate,
     methods: {
-        beginCountdown: function(e) {
+        beginCountdown: function (e) {
             console.log("began countdown with duration: " + this.duration);
             if (e == "answer") {
                 this.color = "success";
             }
-            else if (e == "buzz")  {
+            else if (e == "buzz") {
                 this.color = "warning";
             }
-            
+
             this.start = new Date();
             var baseVue = this;
             var timer = setInterval(shrink, 50);
@@ -37,21 +37,21 @@ Vue.component('progressbar', {
                     baseVue.style["width"] = 0;
                     return;
                 }
-                
-                var frac = 1.0 - (delta / baseVue.duration) ;
+
+                var frac = 1.0 - (delta / baseVue.duration);
                 baseVue.style['width'] = frac * 100 + "%";
             }
         },
     },
     computed: {
         classes: function () {
-            return ['progress-bar', 'bg-'+this.color]
+            return ['progress-bar', 'bg-' + this.color]
         },
     },
     created: function () {
-        EventBus.$on("beginCountdown", this.beginCountdown); 
+        EventBus.$on("beginCountdown", this.beginCountdown);
     },
-    beforeDestroy: function() {
+    beforeDestroy: function () {
         EventBus.$off("beginCountdown", this.beginCountdown);
     },
 });

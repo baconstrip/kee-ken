@@ -26,34 +26,34 @@ authTemplate = `<div class="container">
 `
 
 Vue.component('auth-window', {
-    props: ['host'],
-    template: authTemplate,
-    data: function () {
-        return {
-            serverError: "",
-        }
-    },
-    methods: {
-        sendAuth: function() {
-            baseVue = this;
-            $.ajax({
-                type: "POST",
-                url: "http://" + window.location.host + "/auth",
-                data: {
-                    Name: $("#name-field").val(),
-                    Host: baseVue.host == true,
-                    Passcode: $("#passcode").val(),
-                    ServerPasscode: $("#server-passcode").val(),
-                },
-                success: function () {
-                    console.log("Success");
-                    baseVue.$emit("auth-ready");
-                },
-                error: function(e) {
-                    msg = JSON.parse(e.responseText);
-                    baseVue.serverError = msg.Error;
-                },
-            });
+  props: ['host'],
+  template: authTemplate,
+  data: function () {
+    return {
+      serverError: "",
+    }
+  },
+  methods: {
+    sendAuth: function () {
+      baseVue = this;
+      $.ajax({
+        type: "POST",
+        url: "http://" + window.location.host + "/auth",
+        data: {
+          Name: $("#name-field").val(),
+          Host: baseVue.host == true,
+          Passcode: $("#passcode").val(),
+          ServerPasscode: $("#server-passcode").val(),
         },
+        success: function () {
+          console.log("Success");
+          baseVue.$emit("auth-ready");
+        },
+        error: function (e) {
+          msg = JSON.parse(e.responseText);
+          baseVue.serverError = msg.Error;
+        },
+      });
     },
+  },
 });

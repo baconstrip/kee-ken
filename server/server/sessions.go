@@ -77,7 +77,7 @@ func (s *SessionManager) IDFromName(name string) (SessionID, bool) {
 // destroySession removes all the information associated with a session,
 // including the variables and connections. Should only be called after
 // dropConnection.
-func (s *SessionManager) destroySession(key SessionID) {
+func (s *SessionManager) DestroySession(key SessionID) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.names, s.sessions[key].name)

@@ -1,1 +1,90 @@
-[{"category": "Effiel", "value": "$200", "question": "Who designed the Effield Tower?", "answer": "Effiel", "round": "daiichi", "show_number": 1}, {"category": "Effiel", "value": "$800", "question": "How tall is the Effiel Tower in metres?", "answer": "324", "round": "daiichi", "show_number": 1}, {"category": "Effiel", "value": "$1000", "question": "There is one freestanding structure in France taller than the Effiel Tower, what is it?", "answer": "Millau Viaduct", "round": "daiichi", "show_number": 1}, {"category": "Effiel", "value": "$400", "question": "The Effiel Tower was constructed for and event in 1889, what was it?", "answer": "The World's Fair", "round": "daiichi", "show_number": 1}, {"category": "Effiel", "value": "$600", "question": "The Effiel Tower is primarily constructed of what?", "answer": "Wrought iron or steel", "round": "daiichi", "show_number": 1}]
+[
+    {
+        "category": "Effiel",
+        "value": "$200",
+        "question": "Who designed the Effield Tower?",
+        "answer": "Effiel",
+        "round": "daiichi",
+        "show_number": 1
+    },
+    {
+        "category": "Effiel",
+        "value": "$800",
+        "question": "How tall is the Effiel Tower in metres?",
+        "answer": "324",
+        "round": "daiichi",
+        "show_number": 1
+    },
+    {
+        "category": "Effiel",
+        "value": "$1000",
+        "question": "There is one freestanding structure in France taller than the Effiel Tower, what is it?",
+        "answer": "Millau Viaduct",
+        "round": "daiichi",
+        "show_number": 1
+    },
+    {
+        "category": "Effiel",
+        "value": "$400",
+        "question": "The Effiel Tower was constructed for an event in 1889, what was it?",
+        "answer": "The World's Fair",
+        "round": "daiichi",
+        "show_number": 1
+    },
+    {
+        "category": "Effiel",
+        "value": "$600",
+        "question": "The Effiel Tower is primarily constructed of what?",
+        "answer": "Wrought iron or steel",
+        "round": "daini",
+        "show_number": 1
+    },
+    {
+        "category": "Colors",
+        "value": "$400",
+        "question": "Azure is a shade of what color?",
+        "answer": "blue",
+        "round": "daini",
+        "show_number": 1
+    },
+    {
+        "category": "Colors",
+        "value": "$1600",
+        "question": "In RGB, mixing red and blue gives what color?",
+        "answer": "purple",
+        "round": "daini",
+        "show_number": 1
+    },
+    {
+        "category": "Colors",
+        "value": "$2000",
+        "question": "In it's pure state, what color is Topaz?",
+        "answer": "colorless",
+        "round": "daini",
+        "show_number": 1
+    },
+    {
+        "category": "Colors",
+        "value": "$800",
+        "question": "If a material absorbs all light, what color is it?",
+        "answer": "black",
+        "round": "daini",
+        "show_number": 1
+    },
+    {
+        "category": "Colors",
+        "value": "$1200",
+        "question": "What color appears, along with blue, on the flag of the United Nations?",
+        "answer": "white",
+        "round": "daini",
+        "show_number": 1
+    },
+    {
+        "category": "Novels",
+        "value": "$1200",
+        "question": "Who wrote harry potter?",
+        "answer": "J.K. Rowling",
+        "round": "owari",
+        "show_number": 1
+    }
+]

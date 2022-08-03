@@ -23,16 +23,16 @@ On Debian derivatives, you can install the required dependencies with:
 apt install golang-go npm
 ```
 
-This is built and tested with Go version 1.10, earlier versions may not 
-compile.
+This is built and tested with Go version 1.18, and requires at least 1.16 to 
+compile and run.
 
 ### Building
 
 First clone the project and navigate to the directory you checked it out into.
 
 ```sh
-git clone https://github.com/baconstrip/kiken
-cd ./kiken
+git clone https://github.com/baconstrip/kee-ken
+cd ./kee-ken
 ```
 
 Then navigate to the `vendor` directory and run the NPM install command. This 
@@ -51,22 +51,15 @@ the JS libraries to the location the server expects them:
 ./copy_js_deps.sh
 ```
 
-After doing this, navigate up a directory and enter the server directory, then
-set the GOPATH environment variable to this directory:
+Once this is complete, you can navigate to the directory that contains the 
+server code, install the Go depdenencies, and then start the server with the 
+included script:
 
 ```sh
-cd ../server
-export GOPATH=$(pwd)
-```
-
-Once this is set, you can navigate to the directory that contains the server
-code, install the Go depdenencies, and then start the server with the included
-script:
-
-```sh
-cd src/github.com/baconstrip/kiken/
+cd server
 go get
-./test_in_place.sh --question-list="../../../../../example/example_questions.json"
+go build
+./test_in_place.sh --question-list="../example/example_questions.json"
 ```
 
 Note the server requires the extra flag "question-list," which instructs the

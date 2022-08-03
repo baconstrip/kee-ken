@@ -1,5 +1,4 @@
-server/server
-**/**/kiken/kiken
+server/kiken
 
 ### Go ###
 # Binaries for programs and plugins

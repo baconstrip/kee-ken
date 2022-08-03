@@ -5,3 +5,7 @@ document.addEventListener("keypress", function (e) {
         EventBus.$emit("spacePress");
     }
 });
+
+document.addEventListener("touchstart", function (e) {
+    EventBus.$emit("spacePress");
+});

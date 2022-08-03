@@ -1,5 +1,5 @@
 questionTemplate = `<div class="modal" id="question-modal" tabindex="-1" role="dialog" data-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 95vw">
     <div class="modal-content" style="color: black" id="prompt-modal">
       <div class="modal-header">
         <h5 class="modal-title">Question</h5>

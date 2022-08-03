@@ -1,5 +1,7 @@
-alertTemplate = `<div class="alert alert-warning">
+alertTemplate = `<div>
+<div class="alert alert-warning">
     {{ message }}
+</div>
 </div>
 `
 

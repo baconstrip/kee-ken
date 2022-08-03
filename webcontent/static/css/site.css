@@ -14,7 +14,7 @@ body {
 }
 
 #owari-board {
-  background-color: #22a; !important
+  background-color: #22a !important;
 }
 
 tr {
@@ -47,4 +47,32 @@ th {
 
 .lockedout {
   background-color: orange;
+}
+
+#gameboard {
+  margin-bottom: 1rem;
+}
+
+#gameboard tr {
+  height: 3rem;
+}
+
+.navbar.topnav {
+  padding: 0 !important;
+}
+
+.gamespacer {
+  margin-top: 3rem;
+}
+
+@media (min-width: 700px) {
+  .login-form {
+    max-width: 40vw;
+  }
+}
+
+.hostbox {
+  background-color: #000;
+  margin-bottom: 1rem;
+  padding: 1rem;
 }

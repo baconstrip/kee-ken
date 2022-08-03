@@ -1,7 +1,7 @@
 authTemplate = `<div class="container">
   <alertbox v-bind:message="serverError" v-if="serverError">
   </alertbox>
-  <form>
+  <form class="login-form">
     <div class="form-group">
       <label for="name-field">Name</label>
       <input type="name" class="form-control" id="name-field" placeholder="Pick a name">

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x -e
+set -x 
 if [ -z "$1" ]; then
 	echo "Please provide a path to the bootstrap files"
 	exit 1

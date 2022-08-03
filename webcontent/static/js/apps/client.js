@@ -2,8 +2,8 @@ gameTemplate = `<div id="app" class="container">
 <div class="alert alert-warning" role="alert" v-if="errorMessages">
   <span v-html="errorMessages"></span>
 </div>
-<hostplayer v-if="ws" v-bind:name="hostPlayerName">
-</hostplayer>
+<gameheader v-if="ws" v-bind:hostName="hostPlayerName" v-bind:board="board">
+</gameheader>
 <gameboard
     v-if="board"
     v-bind:board="board"

@@ -1,7 +1,6 @@
 gameboardTemplate = `<div class="row"> 
   <div class="col col-lg-12" id="gameboard"> 
     <template v-if="board">
-    <h2>Round: {{ board.Round }}</h2>
     <table class="table text-center" >
       <thead>
         <tr>
@@ -33,8 +32,6 @@ Vue.component('gameboard', {
     board: function (newVal, x) {
       // Before we store the board, update it to sort questions by value.
       newVal.Categories.forEach(c => c.Questions.sort((a, b) => a.Value > b.Value));
-      //[...Array(5).keys()].forEach(i => 
-      //    this.rows[i] = [...Array(5).keys()].map(j => newVal.Categories[j].Questions[i]));
     },
   },
   methods: {

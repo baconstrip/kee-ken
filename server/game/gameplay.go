@@ -115,6 +115,7 @@ func (g *GameDriver) sendOwari() {
 		plyOwari.Money = ply.Money
 		g.server.MessagePlayer(server.EncodeServerMessage(&plyOwari), ply.Name)
 	}
+	g.server.MessageHost(server.EncodeServerMessage(&owari))
 }
 
 // showOwariPrompt should only be called after obtaining the mutex.

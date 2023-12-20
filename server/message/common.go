@@ -203,3 +203,6 @@ type ClientTestMessage struct {
 	Example string
 	Number  int
 }
+
+// CancelGame is for the host to indicate the current game should be closed.
+type CancelGame struct{}

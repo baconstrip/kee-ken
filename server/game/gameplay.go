@@ -29,9 +29,8 @@ type Configuration struct {
 type GameDriver struct {
 	// TODO refactor a mutex into this struct, instead of relying on the mutex
 	// of the GameState.
-	gameState       *GameState
-	listenerManager *server.ListenerManager
-	server          *server.Server
+	gameState *GameState
+	server    *server.Server
 
 	config Configuration
 
@@ -644,40 +643,31 @@ func runAfterUnless(d time.Duration, f timedFunc) unlessFunc {
 	}
 }
 
-func NewGameDriver(s *server.Server, gs *GameState, lm *server.ListenerManager, config Configuration) *GameDriver {
-	g := &GameDriver{
-		server:          s,
-		gameState:       gs,
-		listenerManager: lm,
-		players:         make(map[string]*PlayerStats),
-		config:          config,
-		owariState:      &owariState{bids: make(map[string]int), answers: make(map[string]string)},
+func NewGameDriver(s *server.Server, game *Game, lm *server.ListenerManager, config Configuration) *GameDriver {
+	gs := game.CreateState()
+	driver := &GameDriver{
+		server:     s,
+		gameState:  gs,
+		players:    make(map[string]*PlayerStats),
+		config:     config,
+		owariState: &owariState{bids: make(map[string]int), answers: make(map[string]string)},
 	}
 
-	lm.RegisterJoin(g.OnJoinSendBoard)
-	lm.RegisterJoin(g.OnJoinSendUpdatePlayersAndAddPlayer)
-	lm.RegisterLeave(g.OnLeaveMarkDisconnected)
-	lm.RegisterMessage("StartGame", g.OnStartGameMessageStartGame)
-	lm.RegisterMessage("SelectQuestion", g.OnSelectQuestionMessageShowQuestion)
-	lm.RegisterMessage("FinishReading", g.OnFinishReadingMessageBeginCountdown)
-	lm.RegisterMessage("AttemptAnswer", g.OnAttemptAnswerMessageAllowAnswer)
-	lm.RegisterMessage("MarkAnswer", g.OnMarkAnswerMessageMoveAlong)
-	lm.RegisterMessage("MoveOn", g.OnMoveOnMessageShowBoard)
-	lm.RegisterMessage("NextRound", g.OnNextRoundMessageAdvanceRound)
-	lm.RegisterMessage("EnterBid", g.OnEnterBidAddBid)
-	lm.RegisterMessage("FreeformAnswer", g.OnFreeformAnswerAddAnswerOwari)
+	lm.RegisterJoin(driver.OnJoinSendBoard)
+	lm.RegisterJoin(driver.OnJoinSendUpdatePlayersAndAddPlayer)
+	lm.RegisterLeave(driver.OnLeaveMarkDisconnected)
+	lm.RegisterMessage("StartGame", driver.OnStartGameMessageStartGame)
+	lm.RegisterMessage("SelectQuestion", driver.OnSelectQuestionMessageShowQuestion)
+	lm.RegisterMessage("FinishReading", driver.OnFinishReadingMessageBeginCountdown)
+	lm.RegisterMessage("AttemptAnswer", driver.OnAttemptAnswerMessageAllowAnswer)
+	lm.RegisterMessage("MarkAnswer", driver.OnMarkAnswerMessageMoveAlong)
+	lm.RegisterMessage("MoveOn", driver.OnMoveOnMessageShowBoard)
+	lm.RegisterMessage("NextRound", driver.OnNextRoundMessageAdvanceRound)
+	lm.RegisterMessage("EnterBid", driver.OnEnterBidAddBid)
+	lm.RegisterMessage("FreeformAnswer", driver.OnFreeformAnswerAddAnswerOwari)
 
-	return g
-}
+	driver.gameState.currentRound = DAIICHI
+	driver.gameState.currentStatus = STATUS_PRESTART
 
-// Run begins the managing of a game. Runs forever, intended to be called in a
-// goroutine.
-func (g *GameDriver) Run() {
-	g.gameState.mu.Lock()
-	g.gameState.currentRound = DAIICHI
-	g.gameState.currentStatus = STATUS_PRESTART
-	g.gameState.mu.Unlock()
-	for {
-		time.Sleep(10 * time.Millisecond)
-	}
+	return driver
 }

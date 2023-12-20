@@ -2,7 +2,12 @@ gameTemplate = `<div id="app" class="container">
 <div class="alert alert-warning" role="alert" v-if="errorMessages">
   <span v-html="errorMessages"></span>
 </div>
-<gameheader v-if="ws" v-bind:hostName="hostPlayerName" v-bind:board="board">
+<gameheader v-if="ws"
+    v-bind:hostName="hostPlayerName"
+    v-bind:board="board"
+    v-bind:host="host"
+    v-bind:started="!!board"
+    v-on:cancelGame="sendCancelGame">
 </gameheader>
 <gameboard
     v-if="board"
@@ -43,6 +48,8 @@ gameTemplate = `<div id="app" class="container">
     v-bind:money="yourMoney"
     v-bind:host="host">
 </owari>
+<category-browser v-if="host && joined && !board">
+</category-browser>
 <auth-window v-bind:host="host" v-on:auth-ready="join()" v-if="!joined">
 </auth-window>
 <alertbox v-bind:message="gameErrors" v-if="gameErrors">
@@ -236,6 +243,14 @@ new Vue({
                 JSON.stringify({
                     Type: "FreeformAnswer",
                     Data: { Message: e },
+                })
+            );
+        },
+        sendCancelGame: function (e) {
+            this.ws.send(
+                JSON.stringify({
+                    Type: "CancelGame",
+                    Data: {  },
                 })
             );
         },

@@ -41,6 +41,15 @@ func (l *ListenerManager) RegisterLeave(ls LeaveListener) {
 	l.leaveListeners = append(l.leaveListeners, ls)
 }
 
+func (l *ListenerManager) ClearListeners() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.joinListeners = nil
+	l.leaveListeners = nil
+	l.msgListeners = nil
+}
+
 // RegisterMessage adds a ClientMessageListener for the given message type,
 // must be one of the names of a client message in the messages package.
 func (l *ListenerManager) RegisterMessage(messageType string, c ClientMessageListener) {

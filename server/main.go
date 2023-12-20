@@ -8,8 +8,6 @@ import (
 
 	"math/rand"
 
-	"github.com/kr/pretty"
-
 	"github.com/baconstrip/kiken/game"
 	"github.com/baconstrip/kiken/server"
 )
@@ -22,28 +20,13 @@ var (
 	flagPasscode      = flag.String("passcode", "test", "Passcode to use to grant admin privledges")
 )
 
-func main() {
-	flag.Parse()
-
-	if *flagStaticPath == "" || *flagTemplatesPath == "" || *flagQuestionsList == "" {
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-
-	log.Printf("Loading questions...")
-	q, err := game.LoadQuestions(*flagQuestionsList)
-	if err != nil {
-		log.Fatalf("Could not load questions data: %v", err)
-	}
-	log.Printf("Finished loading questions")
-	_ = q
-
-	standardCategories, err := game.CollateFullCategories(q)
+func makeTestGame(questions []*game.Question) *game.Game {
+	standardCategories, err := game.CollateFullCategories(questions)
 	if err != nil {
 		log.Printf("Failed to create categories from questions: %v", err)
 	}
-	owariCategories := game.CollateLoneQuestions(q, game.OWARI)
-	tiebreakerCategories := game.CollateLoneQuestions(q, game.TIEBREAKER)
+	owariCategories := game.CollateLoneQuestions(questions, game.OWARI)
+	tiebreakerCategories := game.CollateLoneQuestions(questions, game.TIEBREAKER)
 
 	log.Printf("Loaded %v standard categories, %v Owari, %v Tiebreaker.", len(standardCategories), len(owariCategories), len(tiebreakerCategories))
 
@@ -73,10 +56,27 @@ func main() {
 	owariBoard := game.NewBoard(game.OWARI, owariCategories[rand.Intn(len(owariCategories))])
 
 	g := game.New(daiichiBoard, dainiBoard, owariBoard)
-	pretty.Print(owariBoard)
-	log.Printf("creating stateful game")
+	return g
+}
 
-	gState := g.CreateState()
+func main() {
+	flag.Parse()
+
+	if *flagStaticPath == "" || *flagTemplatesPath == "" || *flagQuestionsList == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	log.Printf("Loading questions...")
+	q, err := game.LoadQuestions(*flagQuestionsList)
+	if err != nil {
+		log.Fatalf("Could not load questions data: %v", err)
+	}
+	log.Printf("Finished loading questions")
+
+	g := makeTestGame(q)
+
+	log.Printf("creating stateful game")
 
 	lm := server.NewListenerManager()
 
@@ -89,8 +89,7 @@ func main() {
 		AnswerTime:         10 * time.Second,
 	}
 
-	driver := game.NewGameDriver(s, gState, lm, config)
-	go driver.Run()
+	game.NewGameDriver(s, g, lm, config)
 
 	log.Fatal(s.ListenAndServe())
 }

@@ -4,9 +4,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
-
-	"math/rand"
 
 	"github.com/baconstrip/kiken/game"
 	"github.com/baconstrip/kiken/server"
@@ -19,45 +16,6 @@ var (
 	flagQuestionsList = flag.String("question-list", "", "Path to list of questions, must be set")
 	flagPasscode      = flag.String("passcode", "test", "Passcode to use to grant admin privledges")
 )
-
-func makeTestGame(questions []*game.Question) *game.Game {
-	standardCategories, err := game.CollateFullCategories(questions)
-	if err != nil {
-		log.Printf("Failed to create categories from questions: %v", err)
-	}
-	owariCategories := game.CollateLoneQuestions(questions, game.OWARI)
-	tiebreakerCategories := game.CollateLoneQuestions(questions, game.TIEBREAKER)
-
-	log.Printf("Loaded %v standard categories, %v Owari, %v Tiebreaker.", len(standardCategories), len(owariCategories), len(tiebreakerCategories))
-
-	// For testing, create a board of the first 5 categories from daiichi/daini,
-	// and a question from owari.
-	daiichiCount, dainiCount := 0, 0
-	var daiichiCats, dainiCats []*game.Category
-
-	for _, c := range standardCategories {
-		if daiichiCount == 5 && dainiCount == 5 {
-			break
-		}
-
-		if daiichiCount < 5 && c.Round == game.DAIICHI {
-			daiichiCats = append(daiichiCats, c)
-			daiichiCount++
-		}
-		if dainiCount < 5 && c.Round == game.DAINI {
-			dainiCats = append(dainiCats, c)
-			dainiCount++
-		}
-	}
-
-	daiichiBoard := game.NewBoard(game.DAIICHI, daiichiCats...)
-	dainiBoard := game.NewBoard(game.DAINI, dainiCats...)
-	rand.Seed(time.Now().Unix())
-	owariBoard := game.NewBoard(game.OWARI, owariCategories[rand.Intn(len(owariCategories))])
-
-	g := game.New(daiichiBoard, dainiBoard, owariBoard)
-	return g
-}
 
 func main() {
 	flag.Parse()
@@ -74,22 +32,17 @@ func main() {
 	}
 	log.Printf("Finished loading questions")
 
-	g := makeTestGame(q)
-
 	log.Printf("creating stateful game")
 
-	lm := server.NewListenerManager()
-
 	log.Printf("Starting Kiken server on port %v", *flagPort)
-	s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, lm)
 
-	config := game.Configuration{
-		ChanceTime:         5 * time.Second,
-		DisambiguationTime: 200 * time.Millisecond,
-		AnswerTime:         10 * time.Second,
-	}
+	gameLm := server.NewListenerManager()
+	globalLm := server.NewListenerManager()
 
-	game.NewGameDriver(s, g, lm, config)
+	s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, globalLm, gameLm)
+
+	metagame := game.NewMetaGameDriver(q, s, gameLm, globalLm)
+	metagame.Start()
 
 	log.Fatal(s.ListenAndServe())
 }

@@ -29,8 +29,9 @@ type Configuration struct {
 type GameDriver struct {
 	// TODO refactor a mutex into this struct, instead of relying on the mutex
 	// of the GameState.
-	gameState *GameState
-	server    *server.Server
+	gameState       *GameState
+	server          *server.Server
+	listenerManager *server.ListenerManager
 
 	config Configuration
 
@@ -52,9 +53,8 @@ type questionPromptState struct {
 }
 
 type owariState struct {
-	question *QuestionState
-	bids     map[string]int
-	answers  map[string]string
+	bids    map[string]int
+	answers map[string]string
 }
 
 type PlayerStats struct {
@@ -607,6 +607,19 @@ func (g *GameDriver) TimedTimeOutBuzzing() error {
 	return nil
 }
 
+func (g *GameDriver) EndGame() {
+	g.gameState.mu.Lock()
+	defer g.gameState.mu.Unlock()
+
+	log.Print("Cancelling game!")
+
+	g.gameState.currentStatus = STATUS_PRESTART
+
+	g.sendUpdateBoard()
+
+	g.listenerManager.ClearListeners()
+}
+
 type timedFunc func() error
 
 // Functions scheduled to run after should re-obtain mutexes, as they are run
@@ -646,11 +659,12 @@ func runAfterUnless(d time.Duration, f timedFunc) unlessFunc {
 func NewGameDriver(s *server.Server, game *Game, lm *server.ListenerManager, config Configuration) *GameDriver {
 	gs := game.CreateState()
 	driver := &GameDriver{
-		server:     s,
-		gameState:  gs,
-		players:    make(map[string]*PlayerStats),
-		config:     config,
-		owariState: &owariState{bids: make(map[string]int), answers: make(map[string]string)},
+		server:          s,
+		gameState:       gs,
+		players:         make(map[string]*PlayerStats),
+		config:          config,
+		listenerManager: lm,
+		owariState:      &owariState{bids: make(map[string]int), answers: make(map[string]string)},
 	}
 
 	lm.RegisterJoin(driver.OnJoinSendBoard)

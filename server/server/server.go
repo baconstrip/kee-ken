@@ -28,7 +28,8 @@ type Server struct {
 
 	sessionManager SessionManager
 
-	listenerManager *ListenerManager
+	globalListenerManager *ListenerManager
+	gameListenerManager   *ListenerManager
 
 	mux      *http.ServeMux
 	port     int
@@ -70,7 +71,8 @@ func (s *Server) clientWriter(sid SessionID) {
 					go func() {
 						name, firstLeave, host := s.sessionManager.dropConnection(sid)
 						if firstLeave {
-							s.listenerManager.dispatchLeave(name, host)
+							s.globalListenerManager.dispatchLeave(name, host)
+							s.gameListenerManager.dispatchLeave(name, host)
 						}
 					}()
 					log.Printf("Dropping connection to client with session %v because of error sending message: %v", sid, err)
@@ -96,7 +98,8 @@ func (s *Server) clientReader(sid SessionID, ws *websocket.Conn) {
 			log.Printf("Dropping connection to client with session %v because of error reading input: %v", sid, err)
 			name, firstLeave, host := s.sessionManager.dropConnection(sid)
 			if firstLeave {
-				s.listenerManager.dispatchLeave(name, host)
+				s.globalListenerManager.dispatchLeave(name, host)
+				s.gameListenerManager.dispatchLeave(name, host)
 			}
 			return
 		}
@@ -145,7 +148,8 @@ func (s *Server) clientDispatcher(sid SessionID) {
 			log.Printf("leaving client dispatcher, channel is already closed.")
 			return
 		} else {
-			s.listenerManager.dispatchMessage(vars.name, vars.host, msg)
+			s.globalListenerManager.dispatchMessage(vars.name, vars.host, msg)
+			s.gameListenerManager.dispatchMessage(vars.name, vars.host, msg)
 		}
 	}
 }
@@ -165,7 +169,8 @@ func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
 	go s.clientReader(sid, ws)
 	go s.clientDispatcher(sid)
 
-	s.listenerManager.dispatchJoin(vars.name, vars.host)
+	s.globalListenerManager.dispatchJoin(vars.name, vars.host)
+	s.gameListenerManager.dispatchJoin(vars.name, vars.host)
 
 	// Wait forever
 	for {
@@ -439,7 +444,7 @@ func (s *Server) MessagePlayer(msg message.ServerMessage, name string) {
 // parts of the program as messages. As such, a ListenerManager is provided by
 // reference from the other parts of the program, to allow other aspects to
 // register event listeners.
-func New(templatePath, staticPath, passcode string, port int, lm *ListenerManager) *Server {
+func New(templatePath, staticPath, passcode string, port int, globalLm *ListenerManager, gameLm *ListenerManager) *Server {
 	server := &Server{
 		port:     port,
 		passcode: passcode,
@@ -449,7 +454,8 @@ func New(templatePath, staticPath, passcode string, port int, lm *ListenerManage
 			names:           make(map[string]SessionID),
 			recentlyDropped: make(map[SessionID]time.Time),
 		},
-		listenerManager: lm,
+		globalListenerManager: globalLm,
+		gameListenerManager:   gameLm,
 	}
 	server.index = template.Must(template.ParseFiles(
 		filepath.Join(templatePath, "index.html"),

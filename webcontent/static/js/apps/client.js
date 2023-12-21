@@ -159,6 +159,16 @@ new Vue({
                     baseVue.owariBids = msg["Data"].Bids;
                     baseVue.owariAnswers = msg["Data"].Answers;
                 }
+                if (msg["Type"] == "ClearBoard") {
+                    baseVue.serverContent = '';
+                    baseVue.errorMessages= '';
+                    baseVue.gameErrors = '';
+                    baseVue.board = '';
+                    baseVue.owari = null;
+                    baseVue.owariPrompt = null;
+                    baseVue.owariAnswers = null;
+                    baseVue.owariBids = null;
+                }
             };
             this.ws.onerror = function (e) {
                 $("#join-button").removeClass("d-none");

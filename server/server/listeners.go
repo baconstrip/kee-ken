@@ -47,7 +47,7 @@ func (l *ListenerManager) ClearListeners() {
 
 	l.joinListeners = nil
 	l.leaveListeners = nil
-	l.msgListeners = nil
+	l.msgListeners = make(map[string][]ClientMessageListener)
 }
 
 // RegisterMessage adds a ClientMessageListener for the given message type,

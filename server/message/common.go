@@ -139,6 +139,8 @@ type ShowOwariResults struct {
 	Bids    map[string]int
 }
 
+type ClearBoard struct{}
+
 // ------- BEGIN CLIENT MESSAGES --------
 
 // AuthInfo defines a message that the client sends to the server to provide

@@ -1,8 +1,10 @@
-package game
+package question
 
 import (
 	"fmt"
 	"math"
+
+	"github.com/baconstrip/kiken/common"
 )
 
 var potentialValueRanges = [][]int{
@@ -160,11 +162,11 @@ func targetRoundValues(cat *Category) error {
 	}
 
 	// If they're already correct, we're done.
-	if round == DAIICHI && min == 200 || round == DAINI && min == 400 {
+	if round == common.DAIICHI && min == 200 || round == common.DAINI && min == 400 {
 		return nil
 	}
 
-	if round == DAIICHI && min == 100 || round == DAINI && min == 200 {
+	if round == common.DAIICHI && min == 100 || round == common.DAINI && min == 200 {
 		doubleValues(cat)
 		return nil
 	}

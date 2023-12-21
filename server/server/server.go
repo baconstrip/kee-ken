@@ -364,7 +364,7 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
 	case "NextRound":
 		value = &message.NextRound{}
 	case "StartGame":
-		value = &message.NextRound{}
+		value = &message.StartGame{}
 	case "AttemptAnswer":
 		m := message.AttemptAnswer{}
 		err = d.Decode(&m)

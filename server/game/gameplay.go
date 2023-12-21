@@ -7,7 +7,9 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/baconstrip/kiken/common"
 	"github.com/baconstrip/kiken/message"
+	"github.com/baconstrip/kiken/question"
 	"github.com/baconstrip/kiken/server"
 )
 
@@ -42,7 +44,7 @@ type GameDriver struct {
 }
 
 type questionPromptState struct {
-	question          *QuestionState
+	question          *question.QuestionState
 	questionOpened    time.Time
 	attemptedBuzzes   map[string]int
 	alreadyAnswered   []string
@@ -82,7 +84,7 @@ func (g *GameDriver) sendUpdateBoard() {
 }
 
 func (g *GameDriver) sendOwari() {
-	cat := g.gameState.Boards[OWARI-1].Categories[0]
+	cat := g.gameState.Boards[common.OWARI-1].Categories[0]
 	owari := message.BeginOwari{Category: cat.Snapshot().ToCategoryOverview()}
 	for _, ply := range g.metagame.players {
 		plyOwari := owari
@@ -95,7 +97,7 @@ func (g *GameDriver) sendOwari() {
 // showOwariPrompt should only be called after obtaining the mutex.
 func (g *GameDriver) showOwariPrompt() {
 	g.gameState.currentStatus = STATUS_OWARI_AWAIT_ANSWERS
-	ques := g.gameState.Boards[OWARI-1].Categories[0].Questions[0]
+	ques := g.gameState.Boards[common.OWARI-1].Categories[0].Questions[0]
 	snap := ques.Snapshot()
 	hostPrompt := snap.ToQuestionPrompt(true)
 	playerPrompt := snap.ToQuestionPrompt(false)
@@ -174,7 +176,7 @@ func (g *GameDriver) OnLeaveStopAnswering(name string, host bool) error {
 		unless := runAfterUnless(g.config.ChanceTime, g.TimedTimeOutBuzzing)
 		g.quesState.buzzTimeoutUnless = unless
 		if s, ok := g.metagame.players[g.quesState.playerAnswering]; ok {
-			g.metagame.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.data.Value
+			g.metagame.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.Data.Value
 		}
 	}
 
@@ -299,7 +301,7 @@ func (g *GameDriver) OnMarkAnswerMessageMoveAlong(name string, host bool, msg me
 		log.Printf("map: %p", &g.metagame.players)
 		if s, ok := g.metagame.players[g.quesState.playerAnswering]; ok {
 			log.Printf("found, granting %v", s)
-			g.metagame.players[g.quesState.playerAnswering].Money = s.Money + g.quesState.question.data.Value
+			g.metagame.players[g.quesState.playerAnswering].Money = s.Money + g.quesState.question.Data.Value
 		}
 		// When a player gets a question correct, they get to pick next.
 		g.playerSelecting().Selecting = false
@@ -321,7 +323,7 @@ func (g *GameDriver) OnMarkAnswerMessageMoveAlong(name string, host bool, msg me
 	unless := runAfterUnless(g.config.ChanceTime, g.TimedTimeOutBuzzing)
 	g.quesState.buzzTimeoutUnless = unless
 	if s, ok := g.metagame.players[g.quesState.playerAnswering]; ok {
-		g.metagame.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.data.Value
+		g.metagame.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.Data.Value
 	}
 	g.quesState.alreadyAnswered = append(g.quesState.alreadyAnswered, g.quesState.playerAnswering)
 	g.metagame.sendUpdatePlayers()
@@ -359,7 +361,7 @@ func (g *GameDriver) OnNextRoundMessageAdvanceRound(name string, host bool, msg 
 	}
 
 	g.gameState.currentRound = g.gameState.currentRound + 1
-	if g.gameState.currentRound == OWARI {
+	if g.gameState.currentRound == common.OWARI {
 		g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
 	}
 
@@ -577,7 +579,7 @@ func NewGameDriver(s *server.Server, game *Game, lm *server.ListenerManager, con
 	lm.RegisterMessage("EnterBid", driver.OnEnterBidAddBid)
 	lm.RegisterMessage("FreeformAnswer", driver.OnFreeformAnswerAddAnswerOwari)
 
-	driver.gameState.currentRound = DAIICHI
+	driver.gameState.currentRound = common.DAIICHI
 	driver.gameState.currentStatus = STATUS_PRESTART
 
 	return driver

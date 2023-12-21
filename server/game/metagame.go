@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/baconstrip/kiken/common"
 	"github.com/baconstrip/kiken/message"
+	"github.com/baconstrip/kiken/question"
 	"github.com/baconstrip/kiken/server"
 )
 
@@ -22,10 +24,36 @@ type MetaGameDriver struct {
 
 	gameDriver *GameDriver
 
-	questions []*Question
+	questions []*question.Question
 
 	players map[string]*PlayerStats
 	host    *PlayerStats
+}
+
+func NewMetaGameDriver(questions []*question.Question, s *server.Server, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
+	config := Configuration{
+		ChanceTime:         5 * time.Second,
+		DisambiguationTime: 200 * time.Millisecond,
+		AnswerTime:         10 * time.Second,
+	}
+
+	return &MetaGameDriver{
+		gameLm:    gameLm,
+		globalLm:  globalLm,
+		config:    config,
+		server:    s,
+		questions: questions,
+		players:   make(map[string]*PlayerStats),
+
+		mu: &sync.RWMutex{},
+	}
+}
+
+func (m *MetaGameDriver) Start() {
+	m.globalLm.RegisterMessage("CancelGame", m.onCancelGameCancel)
+	m.globalLm.RegisterMessage("StartGame", m.onStartGameStart)
+	m.globalLm.RegisterJoin(m.onJoinSendUpdatePlayersAndAddPlayer)
+	m.globalLm.RegisterLeave(m.onLeaveMarkDisconnected)
 }
 
 // generateUpdatePlayers creates the UpdatePlayers message from the players
@@ -53,41 +81,9 @@ func (m *MetaGameDriver) sendUpdatePlayers() {
 	m.server.MessageAll(msg)
 }
 
-func NewMetaGameDriver(questions []*Question, s *server.Server, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
-	config := Configuration{
-		ChanceTime:         5 * time.Second,
-		DisambiguationTime: 200 * time.Millisecond,
-		AnswerTime:         10 * time.Second,
-	}
+// ----- Metagame listeners -----
 
-	return &MetaGameDriver{
-		gameLm:    gameLm,
-		globalLm:  globalLm,
-		config:    config,
-		server:    s,
-		questions: questions,
-		players:   make(map[string]*PlayerStats),
-
-		mu: &sync.RWMutex{},
-	}
-}
-
-func (m *MetaGameDriver) onCancelGameCancel(_ string, host bool, _ message.ClientMessage) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if !host {
-		return nil
-	}
-
-	if m.gameDriver != nil {
-		m.gameDriver.EndGame()
-	}
-
-	return nil
-}
-
-func (m *MetaGameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host bool) error {
+func (m *MetaGameDriver) onJoinSendUpdatePlayersAndAddPlayer(name string, host bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -127,7 +123,7 @@ func (m *MetaGameDriver) OnJoinSendUpdatePlayersAndAddPlayer(name string, host b
 	return nil
 }
 
-func (m *MetaGameDriver) OnLeaveMarkDisconnected(name string, host bool) error {
+func (m *MetaGameDriver) onLeaveMarkDisconnected(name string, host bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -158,49 +154,59 @@ func (m *MetaGameDriver) onStartGameStart(name string, host bool, _ message.Clie
 	return nil
 }
 
-func (m *MetaGameDriver) Start() {
-	m.globalLm.RegisterMessage("CancelGame", m.onCancelGameCancel)
-	m.globalLm.RegisterMessage("StartGame", m.onStartGameStart)
-	m.globalLm.RegisterJoin(m.OnJoinSendUpdatePlayersAndAddPlayer)
-	m.globalLm.RegisterLeave(m.OnLeaveMarkDisconnected)
+func (m *MetaGameDriver) onCancelGameCancel(_ string, host bool, _ message.ClientMessage) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if !host {
+		return nil
+	}
+
+	if m.gameDriver != nil {
+		m.gameDriver.EndGame()
+	}
+
+	m.gameDriver = nil
+
+	return nil
 }
 
 // ------------- testing game helper --------------
 
-func makeTestGame(questions []*Question) *Game {
-	standardCategories, err := CollateFullCategories(questions)
+func makeTestGame(questions []*question.Question) *Game {
+	standardCategories, err := question.CollateFullCategories(questions)
 	if err != nil {
 		log.Printf("Failed to create categories from questions: %v", err)
 	}
-	owariCategories := CollateLoneQuestions(questions, OWARI)
-	tiebreakerCategories := CollateLoneQuestions(questions, TIEBREAKER)
+	owariCategories := question.CollateLoneQuestions(questions, common.OWARI)
+	tiebreakerCategories := question.CollateLoneQuestions(questions, common.TIEBREAKER)
 
 	log.Printf("Loaded %v standard categories, %v Owari, %v Tiebreaker.", len(standardCategories), len(owariCategories), len(tiebreakerCategories))
 
 	// For testing, create a board of the first 4 categories from daiichi/daini,
 	// and a question from owari.
 	daiichiCount, dainiCount := -1, 0
-	var daiichiCats, dainiCats []*Category
+	var daiichiCats, dainiCats []*question.Category
 
 	for _, c := range standardCategories {
 		if daiichiCount == 4 && dainiCount == 5 {
 			break
 		}
 
-		if daiichiCount < 4 && c.Round == DAIICHI {
+		if daiichiCount < 4 && c.Round == common.DAIICHI {
 			daiichiCats = append(daiichiCats, c)
 			daiichiCount++
 		}
-		if dainiCount < 4 && c.Round == DAINI {
+		if dainiCount < 4 && c.Round == common.DAINI {
 			dainiCats = append(dainiCats, c)
 			dainiCount++
 		}
 	}
 
-	daiichiBoard := NewBoard(DAIICHI, daiichiCats...)
-	dainiBoard := NewBoard(DAINI, dainiCats...)
+	daiichiBoard := NewBoard(common.DAIICHI, daiichiCats...)
+	dainiBoard := NewBoard(common.DAINI, dainiCats...)
 	rand.Seed(time.Now().Unix())
-	owariBoard := NewBoard(OWARI, owariCategories[rand.Intn(len(owariCategories))])
+	owariBoard := NewBoard(common.OWARI, owariCategories[rand.Intn(len(owariCategories))])
 
 	g := New(daiichiBoard, dainiBoard, owariBoard)
 	return g

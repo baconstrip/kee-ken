@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/baconstrip/kiken/game"
+	"github.com/baconstrip/kiken/question"
 	"github.com/baconstrip/kiken/server"
 )
 
@@ -26,7 +27,7 @@ func main() {
 	}
 
 	log.Printf("Loading questions...")
-	q, err := game.LoadQuestions(*flagQuestionsList)
+	q, err := question.LoadQuestions(*flagQuestionsList)
 	if err != nil {
 		log.Fatalf("Could not load questions data: %v", err)
 	}

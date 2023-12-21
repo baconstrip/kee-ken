@@ -1,4 +1,4 @@
-package game
+package question
 
 import (
 	"crypto/sha512"
@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/baconstrip/kiken/common"
 )
 
 var valueRegexp = regexp.MustCompile("^[$]?([0-9,]*)$|^[Nn][Oo][Nn][Ee]$|^$")
@@ -19,7 +21,7 @@ type Question struct {
 	Value    int
 	Question string
 	Answer   string
-	Round    Round
+	Round    common.Round
 	Showing  int
 
 	// ID contains the base64 encoded SHA512 encoding of the question
@@ -29,7 +31,7 @@ type Question struct {
 
 type Category struct {
 	Name      string
-	Round     Round
+	Round     common.Round
 	Questions []*Question
 }
 
@@ -67,7 +69,7 @@ func LoadQuestions(path string) ([]*Question, error) {
 func CollateFullCategories(questions []*Question) ([]*Category, error) {
 	var filteredQuestions []*Question
 	for _, q := range questions {
-		if q.Round == DAIICHI || q.Round == DAINI {
+		if q.Round == common.DAIICHI || q.Round == common.DAINI {
 			filteredQuestions = append(filteredQuestions, q)
 		}
 	}
@@ -101,7 +103,7 @@ func CollateFullCategories(questions []*Question) ([]*Category, error) {
 }
 
 // CollateLoneQuestions collects questions for the final rounds of play.
-func CollateLoneQuestions(questions []*Question, r Round) []*Category {
+func CollateLoneQuestions(questions []*Question, r common.Round) []*Category {
 	var filteredQuestions []*Question
 	for _, q := range questions {
 		if q.Round == r {
@@ -273,42 +275,42 @@ func parseAnswer(q map[string]interface{}) (string, error) {
 	}
 }
 
-func parseRound(q map[string]interface{}) (Round, error) {
+func parseRound(q map[string]interface{}) (common.Round, error) {
 	if _, ok := q["round"]; !ok {
-		return UNKNOWN, fmt.Errorf("question has no round")
+		return common.UNKNOWN, fmt.Errorf("question has no round")
 	}
 	round := q["round"]
 	switch t := round.(type) {
 	case string:
 		r := strings.TrimSpace(strings.ToLower(round.(string)))
 		if strings.HasPrefix(r, "j") {
-			return DAIICHI, nil
+			return common.DAIICHI, nil
 		}
 		if strings.HasPrefix(r, "do") {
-			return DAINI, nil
+			return common.DAINI, nil
 		}
 		if strings.HasPrefix(r, "f") {
-			return OWARI, nil
+			return common.OWARI, nil
 		}
 		if r == "daiichi" {
-			return DAIICHI, nil
+			return common.DAIICHI, nil
 		}
 		if r == "daini" {
-			return DAINI, nil
+			return common.DAINI, nil
 		}
 		if r == "owari" {
-			return OWARI, nil
+			return common.OWARI, nil
 		}
 		if strings.HasPrefix(r, "tiebreaker") {
-			return TIEBREAKER, nil
+			return common.TIEBREAKER, nil
 		}
-		return UNKNOWN, nil
+		return common.UNKNOWN, nil
 	case int:
-		return (Round)(round.(int)), nil
+		return (common.Round)(round.(int)), nil
 	case float64:
-		return (Round)(int(round.(float64))), nil
+		return (common.Round)(int(round.(float64))), nil
 	default:
-		return UNKNOWN, fmt.Errorf("bad type reading round, should be a word representing the round, %v", t)
+		return common.UNKNOWN, fmt.Errorf("bad type reading round, should be a word representing the round, %v", t)
 	}
 }
 

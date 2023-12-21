@@ -1,9 +1,10 @@
-package game
+package question
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/baconstrip/kiken/common"
 	"github.com/kr/pretty"
 )
 
@@ -17,128 +18,128 @@ var testData = []struct {
 		name: "Doesn't affect questions with already appropriate values",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 	},
 	{
-		name: "Corrects one incorrect value in DAIICHI",
+		name: "Corrects one incorrect value in common.DAIICHI",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    2000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
@@ -147,63 +148,63 @@ var testData = []struct {
 		name: "Corrects duplicates",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
@@ -212,258 +213,258 @@ var testData = []struct {
 		name: "Corrects one incorrect value",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    700,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 	},
 	{
-		name: "Corrects one incorrect value in DAINI",
+		name: "Corrects one incorrect value in common.DAINI",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAINI,
+			Round: common.DAINI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1200,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    300,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    2000,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAINI,
+			Round: common.DAINI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1200,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1600,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    2000,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 			},
 		},
 	},
 	{
-		name: "Corrects one incorrect value in DAINI with different value range, out of order",
+		name: "Corrects one incorrect value in common.DAINI with different value range, out of order",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAINI,
+			Round: common.DAINI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1280,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAINI,
+			Round: common.DAINI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    600,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAINI,
+					Round:    common.DAINI,
 				},
 			},
 		},
 	},
 	{
-		name: "Corrects one incorrect value in DAIICHI with different value range",
+		name: "Corrects one incorrect value in common.DAIICHI with different value range",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    100,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    500,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
 		want: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    100,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    300,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    500,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},
@@ -472,37 +473,37 @@ var testData = []struct {
 		name: "Errors with too many questions",
 		category: Category{
 			Name:  "TestCategory",
-			Round: DAIICHI,
+			Round: common.DAIICHI,
 			Questions: []*Question{
 				{
 					Category: "TestCategory",
 					Value:    100,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    200,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    1000,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    400,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    500,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 				{
 					Category: "TestCategory",
 					Value:    800,
-					Round:    DAIICHI,
+					Round:    common.DAIICHI,
 				},
 			},
 		},

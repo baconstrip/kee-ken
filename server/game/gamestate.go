@@ -1,6 +1,13 @@
 package game
 
-import "sync"
+import (
+	"strconv"
+	"sync"
+
+	"github.com/baconstrip/kiken/common"
+	"github.com/baconstrip/kiken/message"
+	"github.com/baconstrip/kiken/question"
+)
 
 type Status int
 
@@ -34,16 +41,6 @@ func (g *GameState) IsOwariState() bool {
 	return g.currentStatus == STATUS_ACCEPTING_BIDS || g.currentStatus == STATUS_OWARI_AWAIT_ANSWERS || g.currentStatus == STATUS_SHOWING_OWARI
 }
 
-type Round int
-
-const (
-	UNKNOWN Round = iota
-	DAIICHI
-	DAINI
-	OWARI
-	TIEBREAKER
-)
-
 // CreateState is called once a Game struct is completed, and attaches state
 // data to the Game, allowing it to be played.
 func (g *Game) CreateState() *GameState {
@@ -54,7 +51,7 @@ func (g *Game) CreateState() *GameState {
 	return &GameState{
 		data:          g,
 		Boards:        bstates,
-		currentRound:  UNKNOWN,
+		currentRound:  common.UNKNOWN,
 		currentStatus: STATUS_PRESTART,
 	}
 }
@@ -68,7 +65,7 @@ type GameState struct {
 
 	Boards []*BoardState
 
-	currentRound  Round
+	currentRound  common.Round
 	currentStatus Status
 }
 
@@ -86,7 +83,7 @@ func (g *GameState) Snapshot() *GameStateSnapshot {
 }
 
 func (g *GameState) CurrentBoard() *BoardState {
-	if g.currentRound == UNKNOWN {
+	if g.currentRound == common.UNKNOWN {
 		return nil
 	}
 	return g.Boards[int(g.currentRound)-1]
@@ -94,11 +91,11 @@ func (g *GameState) CurrentBoard() *BoardState {
 
 // Find Question looks up a question in the GameState. Caller *must* already
 // hold at least the read mutex for GameState.
-func (g *GameState) FindQuestion(id string) *QuestionState {
+func (g *GameState) FindQuestion(id string) *question.QuestionState {
 	for _, b := range g.Boards {
 		for _, c := range b.Categories {
 			for _, q := range c.Questions {
-				if q.data.ID == id {
+				if q.Data.ID == id {
 					return q
 				}
 			}
@@ -108,9 +105,9 @@ func (g *GameState) FindQuestion(id string) *QuestionState {
 }
 
 func (b *Board) state() *BoardState {
-	var cstates []*CategoryState
+	var cstates []*question.CategoryState
 	for _, c := range b.Categories {
-		cstates = append(cstates, c.state())
+		cstates = append(cstates, c.State())
 	}
 	return &BoardState{
 		data:       b,
@@ -123,11 +120,11 @@ func (b *Board) state() *BoardState {
 type BoardState struct {
 	data *Board
 
-	Categories []*CategoryState
+	Categories []*question.CategoryState
 }
 
 func (b *BoardState) Snapshot() *BoardStateSnapshot {
-	var csnaps []CategoryStateSnapshot
+	var csnaps []question.CategoryStateSnapshot
 	for _, c := range b.Categories {
 		snap := c.Snapshot()
 		csnaps = append(csnaps, *snap)
@@ -138,96 +135,27 @@ func (b *BoardState) Snapshot() *BoardStateSnapshot {
 	}
 }
 
-func (c *Category) state() *CategoryState {
-	var qstates []*QuestionState
-	for _, q := range c.Questions {
-		qstates = append(qstates, q.state())
-	}
-	return &CategoryState{
-		data:      c,
-		Questions: qstates,
-	}
-}
-
-// CategoryState represents a category with stateful data. Member "data" should
-// never be modified.
-type CategoryState struct {
-	data *Category
-
-	Questions []*QuestionState
-}
-
-func (c *CategoryState) Snapshot() *CategoryStateSnapshot {
-	var qsnaps []QuestionStateSnapshot
-	for _, q := range c.Questions {
-		snap := q.Snapshot()
-		qsnaps = append(qsnaps, *snap)
-	}
-
-	return &CategoryStateSnapshot{
-		Name:      c.data.Name,
-		Round:     c.data.Round,
-		Questions: qsnaps,
-	}
-}
-
-func (q *Question) state() *QuestionState {
-	return &QuestionState{
-		data:   q,
-		Played: false,
-	}
-}
-
-// QuestionState represents a question with stateful data. Member "data" should
-// never be modified.
-type QuestionState struct {
-	data *Question
-
-	Played bool
-}
-
-func (q *QuestionState) Snapshot() *QuestionStateSnapshot {
-	return &QuestionStateSnapshot{
-		Category: q.data.Category,
-		Value:    q.data.Value,
-		Question: q.data.Question,
-		Answer:   q.data.Answer,
-		Round:    q.data.Round,
-		Showing:  q.data.Showing,
-		Played:   q.Played,
-
-		ID: q.data.ID,
-	}
-}
-
 type GameStateSnapshot struct {
-	CurrentRound  Round
+	CurrentRound  common.Round
 	CurrentStatus Status
 
 	Boards []BoardStateSnapshot
 }
 
 type BoardStateSnapshot struct {
-	Categories []CategoryStateSnapshot
-	Round      Round
+	Categories []question.CategoryStateSnapshot
+	Round      common.Round
 	// Snapshot does not include pachi, as they are never needed by the
 	// snapshot.
 }
 
-type CategoryStateSnapshot struct {
-	Name      string
-	Round     Round
-	Questions []QuestionStateSnapshot
-}
-
-type QuestionStateSnapshot struct {
-	Category string
-	Value    int
-	Question string
-	Answer   string
-	Round    Round
-	Showing  int
-	Played   bool
-
-	ID string
+func (b *BoardStateSnapshot) ToBoardOverview() *message.BoardOverview {
+	var categories []*message.CategoryOverview
+	for _, c := range b.Categories {
+		categories = append(categories, c.ToCategoryOverview())
+	}
+	return &message.BoardOverview{
+		Round:      strconv.Itoa(int(b.Round)),
+		Categories: categories,
+	}
 }

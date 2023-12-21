@@ -3,6 +3,9 @@ package game
 import (
 	"fmt"
 	"sort"
+
+	"github.com/baconstrip/kiken/common"
+	"github.com/baconstrip/kiken/question"
 )
 
 // Game represents the non-stateful data of a game.
@@ -12,12 +15,12 @@ type Game struct {
 
 // Board represents the non-stateful data of Board.
 type Board struct {
-	Categories []*Category
+	Categories []*question.Category
 	// Points to questions where players are given an opportunity to wager on
 	// answer.
-	pachi []*Question
+	pachi []*question.Question
 
-	Round Round
+	Round common.Round
 }
 
 func New(boards ...*Board) *Game {
@@ -26,14 +29,14 @@ func New(boards ...*Board) *Game {
 	}
 }
 
-func NewBoard(round Round, categories ...*Category) *Board {
+func NewBoard(round common.Round, categories ...*question.Category) *Board {
 	return &Board{
 		Categories: categories,
 		Round:      round,
 	}
 }
 
-func NewCategory(questions ...*Question) (*Category, error) {
+func NewCategory(questions ...*question.Question) (*question.Category, error) {
 	var name string
 	for _, q := range questions {
 		if name != "" && name != q.Category {
@@ -42,8 +45,8 @@ func NewCategory(questions ...*Question) (*Category, error) {
 		name = q.Category
 	}
 
-	sort.Sort(ByValue(questions))
-	retVal := &Category{
+	sort.Sort(question.ByValue(questions))
+	retVal := &question.Category{
 		Name: name,
 	}
 

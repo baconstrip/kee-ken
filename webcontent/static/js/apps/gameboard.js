@@ -15,7 +15,7 @@ gameboardTemplate = `<div class="row">
         </tr>
       </thead>
     </table>
-    <div class="col" v-if="showNext">
+    <div class="col" v-if="showNext && host">
       <div class="row">
         <button type="button" class="btn btn-success" @click="$emit('nextRound');">Next round</button>
       </div>
@@ -63,7 +63,8 @@ Vue.component('gameboard', {
       if (!this.board) {
         return;
       }
-      return [...Array(5).keys()].map(i => [...Array(5).keys()].map(j => this.board.Categories[j].Questions[i]));
+      var boardLength = this.board.Categories.length
+      return [...Array(5).keys()].map(i => [...Array(boardLength).keys()].map(j => this.board.Categories[j].Questions[i]));
     },
   }
 });

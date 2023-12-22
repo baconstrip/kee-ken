@@ -168,6 +168,7 @@ new Vue({
                     baseVue.owariPrompt = null;
                     baseVue.owariAnswers = null;
                     baseVue.owariBids = null;
+                    baseVue.question = '';
                 }
             };
             this.ws.onerror = function (e) {

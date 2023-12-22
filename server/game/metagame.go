@@ -32,7 +32,7 @@ type MetaGameDriver struct {
 
 func NewMetaGameDriver(questions []*question.Question, s *server.Server, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
 	config := Configuration{
-		ChanceTime:         5 * time.Second,
+		ChanceTime:         1 * time.Second,
 		DisambiguationTime: 200 * time.Millisecond,
 		AnswerTime:         10 * time.Second,
 	}
@@ -137,6 +137,7 @@ func (m *MetaGameDriver) onLeaveMarkDisconnected(name string, host bool) error {
 	}
 
 	m.players[name].Connected = false
+	m.players[name].Selecting = false
 
 	m.sendUpdatePlayers()
 
@@ -189,15 +190,15 @@ func makeTestGame(questions []*question.Question) *Game {
 	var daiichiCats, dainiCats []*question.Category
 
 	for _, c := range standardCategories {
-		if daiichiCount == 4 && dainiCount == 5 {
+		if daiichiCount == 1 && dainiCount == 1 {
 			break
 		}
 
-		if daiichiCount < 4 && c.Round == common.DAIICHI {
+		if daiichiCount < 1 && c.Round == common.DAIICHI {
 			daiichiCats = append(daiichiCats, c)
 			daiichiCount++
 		}
-		if dainiCount < 4 && c.Round == common.DAINI {
+		if dainiCount < 1 && c.Round == common.DAINI {
 			dainiCats = append(dainiCats, c)
 			dainiCount++
 		}

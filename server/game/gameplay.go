@@ -157,6 +157,26 @@ func (g *GameDriver) OnJoinShowQuestionPrompt(name string, host bool) error {
 	return nil
 }
 
+func (g *GameDriver) makeLowestPlayerSelect() {
+	lowestValue := math.MaxInt32
+	lowestPlayer := ""
+	for _, ply := range g.metagame.players {
+		ply.Selecting = false
+		if !ply.Connected {
+			continue
+		}
+
+		if ply.Money < lowestValue {
+			lowestValue = ply.Money
+			lowestPlayer = ply.Name
+		}
+	}
+
+	if lowestPlayer != "" {
+		g.metagame.players[lowestPlayer].Selecting = true
+	}
+}
+
 func (g *GameDriver) OnLeaveStopAnswering(name string, host bool) error {
 	g.gameState.mu.Lock()
 	defer g.gameState.mu.Unlock()
@@ -178,6 +198,19 @@ func (g *GameDriver) OnLeaveStopAnswering(name string, host bool) error {
 		if s, ok := g.metagame.players[g.quesState.playerAnswering]; ok {
 			g.metagame.players[g.quesState.playerAnswering].Money = s.Money - g.quesState.question.Data.Value
 		}
+	}
+
+	foundSelector := false
+
+	for _, ply := range g.metagame.players {
+		if ply.Selecting {
+			foundSelector = true
+			break
+		}
+	}
+
+	if g.metagame.players[name].Selecting || !foundSelector {
+		g.makeLowestPlayerSelect()
 	}
 
 	g.metagame.sendUpdatePlayers()
@@ -365,21 +398,7 @@ func (g *GameDriver) OnNextRoundMessageAdvanceRound(name string, host bool, msg 
 		g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
 	}
 
-	lowestValue := math.MaxInt32
-	lowestPlayer := ""
-	for _, ply := range g.metagame.players {
-		ply.Selecting = false
-		if !ply.Connected {
-			continue
-		}
-
-		if ply.Money < lowestValue {
-			lowestValue = ply.Money
-			lowestPlayer = ply.Name
-		}
-	}
-
-	g.metagame.players[lowestPlayer].Selecting = true
+	g.makeLowestPlayerSelect()
 
 	g.sendUpdateBoard()
 	g.metagame.sendUpdatePlayers()
@@ -394,6 +413,11 @@ func (g *GameDriver) OnEnterBidAddBid(name string, host bool, msg message.Client
 	if host {
 		return nil
 	}
+
+	if g.gameState.currentStatus != STATUS_ACCEPTING_BIDS {
+		return nil
+	}
+
 	bid := msg.Data.(*message.EnterBid).Money
 
 	g.owariState.bids[name] = bid

@@ -2,7 +2,7 @@ owariTemplate = `
 <div class="text-center" id="owari-board">
     <h3>Category: {{ category["Name"] }}</h3>
     <alertbox v-bind:message="message" v-if="message"></alertbox>
-    <form v-if="!submitted">
+    <form v-if="!submitted && !host">
         <div class="form-group">
             <label for="bid">Bid Amount</label> 
             <input type="number" id="bid-amount" placeholder="Enter Bid">
@@ -12,10 +12,11 @@ owariTemplate = `
 
     <form v-if="prompt && !ansSubmitted">
         <h2>Question: {{ prompt.Question }}</h2>
-        <label for="answer">Answer</label>
-        <input type="text" id="owari-answer" placeholder="Enter your answer here">
-        <button class="btn btn-danger" type="button" @click="sendAnswer()">Submit Answer</button>
+        <label v-if="!host" for="answer">Answer</label>
+        <input v-if="!host" type="text" id="owari-answer" placeholder="Enter your answer here">
+        <button v-if="!host" class="btn btn-danger" type="button" @click="sendAnswer()">Submit Answer</button>
     </form>
+    <h3 v-if="host && prompt"><i>Answer: {{ prompt.Answer }}</i></h3>
     <ul>
         <li v-for="(n, a) in answers" v-if="answers">
             <em>{{ a }}: </em>{{ n }} (Bid: {{ bids[a] }})

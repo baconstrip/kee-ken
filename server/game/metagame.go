@@ -190,15 +190,15 @@ func makeTestGame(questions []*question.Question) *Game {
 	var daiichiCats, dainiCats []*question.Category
 
 	for _, c := range standardCategories {
-		if daiichiCount == 1 && dainiCount == 1 {
+		if daiichiCount == 6 && dainiCount == 6 {
 			break
 		}
 
-		if daiichiCount < 1 && c.Round == common.DAIICHI {
+		if daiichiCount < 6 && c.Round == common.DAIICHI {
 			daiichiCats = append(daiichiCats, c)
 			daiichiCount++
 		}
-		if dainiCount < 1 && c.Round == common.DAINI {
+		if dainiCount < 6 && c.Round == common.DAINI {
 			dainiCats = append(dainiCats, c)
 			dainiCount++
 		}

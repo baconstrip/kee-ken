@@ -209,7 +209,11 @@ func (g *GameDriver) OnLeaveStopAnswering(name string, host bool) error {
 		}
 	}
 
-	if g.metagame.players[name].Selecting || !foundSelector {
+	if _, ok := g.metagame.players[name]; ok {
+		if g.metagame.players[name].Selecting {
+			g.makeLowestPlayerSelect()
+		}
+	} else if !foundSelector {
 		g.makeLowestPlayerSelect()
 	}
 

@@ -32,7 +32,7 @@ type MetaGameDriver struct {
 
 func NewMetaGameDriver(questions []*question.Question, s *server.Server, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
 	config := Configuration{
-		ChanceTime:         1 * time.Second,
+		ChanceTime:         10 * time.Second,
 		DisambiguationTime: 200 * time.Millisecond,
 		AnswerTime:         10 * time.Second,
 	}

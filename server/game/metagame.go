@@ -186,7 +186,7 @@ func makeTestGame(questions []*question.Question) *Game {
 
 	// For testing, create a board of the first 4 categories from daiichi/daini,
 	// and a question from owari.
-	daiichiCount, dainiCount := -1, 0
+	daiichiCount, dainiCount := 0, 0
 	var daiichiCats, dainiCats []*question.Category
 	for _, c := range standardCategories {
 		if daiichiCount == 6 {

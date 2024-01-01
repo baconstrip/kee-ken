@@ -341,6 +341,7 @@ func (g *GameDriver) OnMarkAnswerMessageMoveAlong(name string, host bool, msg me
 			g.metagame.players[g.quesState.playerAnswering].Money = s.Money + g.quesState.question.Data.Value
 		}
 		// When a player gets a question correct, they get to pick next.
+		// fix this shit
 		g.playerSelecting().Selecting = false
 		g.metagame.players[g.quesState.playerAnswering].Selecting = true
 

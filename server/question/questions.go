@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -45,7 +45,7 @@ func (b ByValue) Less(i, j int) bool { return b[i].Value < b[j].Value }
 // LoadQuestsions reads the contents of the file at path as JSON and
 // tries to interpret it as question data.
 func LoadQuestions(path string) ([]*Question, error) {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func LoadQuestions(path string) ([]*Question, error) {
 // that there are exactly 5 questions available. It will ignore any categories
 // that don't have 5 questions, after filtering for questions that are played
 // in normal play (not tiebreakers nor Owari).
-func CollateFullCategories(questions []*Question) ([]*Category, error) {
+func CollateFullCategories(questions []*Question, discard bool) ([]*Category, error) {
 	var filteredQuestions []*Question
 	for _, q := range questions {
 		if q.Round == common.DAIICHI || q.Round == common.DAINI {
@@ -81,12 +81,16 @@ func CollateFullCategories(questions []*Question) ([]*Category, error) {
 
 	filteredCategories := make(map[string][]*Question)
 
-	for cat, q := range categoryGroups {
-		if len(q) == 5 {
-			filteredCategories[cat] = q
+	if discard {
+		for cat, q := range categoryGroups {
+			if len(q) == 5 {
+				filteredCategories[cat] = q
+			}
 		}
+		log.Printf("Filtered for categories that contain 5 questions, discarded %v categories", len(categoryGroups)-len(filteredCategories))
+	} else {
+		filteredCategories = categoryGroups
 	}
-	log.Printf("Filtered for categories that contain 5 questions, discarded %v categories", len(categoryGroups)-len(filteredCategories))
 
 	var categories []*Category
 	for cat, q := range filteredCategories {

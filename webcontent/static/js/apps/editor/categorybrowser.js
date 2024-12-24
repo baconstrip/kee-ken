@@ -3,7 +3,7 @@ test
 </div>
 `
 
-Vue.component('category-browser', {
+Vue.component('CategoryBrowser', {
     props: ['message'],
     template: categoryBrowserTemplate,
 });

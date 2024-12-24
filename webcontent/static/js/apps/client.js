@@ -66,7 +66,6 @@ new Vue({
         serverResp: '',
         joined: false,
         name: '',
-        serverContent: '',
         errorMessages: '',
         gameErrors: '',
         board: '',
@@ -94,8 +93,6 @@ new Vue({
     },
     template: gameTemplate,
     methods: {
-        send: function () {
-        },
         join: function () {
             var baseVue = this;
             $("#join-button").addClass("d-none");
@@ -107,7 +104,6 @@ new Vue({
             this.ws.onmessage = function (e) {
                 var msg = JSON.parse(e.data);
                 console.log(msg);
-                baseVue.serverContent += msg;
                 if (msg["Type"] == "BoardOverview") {
                     baseVue.board = msg["Data"];
                 }
@@ -160,7 +156,6 @@ new Vue({
                     baseVue.owariAnswers = msg["Data"].Answers;
                 }
                 if (msg["Type"] == "ClearBoard") {
-                    baseVue.serverContent = '';
                     baseVue.errorMessages= '';
                     baseVue.gameErrors = '';
                     baseVue.board = '';

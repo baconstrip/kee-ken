@@ -79,14 +79,6 @@ type PlayerAnswering struct {
 	Interval int
 }
 
-// DEPRECATED
-// PlayerAdd is a message sent by the server when a player joins the game
-// to instruct the client to add this player to the UI.
-type PlayerAdd struct {
-	Name  string
-	Money int
-}
-
 // UpdatePlayers is a message sent by the server to refresh the players on a
 // client.
 type UpdatePlayers struct {
@@ -141,6 +133,14 @@ type ShowOwariResults struct {
 
 type ClearBoard struct{}
 
+// ------- EDITOR MESSAGES --------
+
+// AvailableShows is a response to the client's request for shows, and contains
+// a map of show IDs to names
+type AvailableShows struct {
+	Shows map[string]string
+}
+
 // ------- BEGIN CLIENT MESSAGES --------
 
 // AuthInfo defines a message that the client sends to the server to provide
@@ -150,6 +150,7 @@ type AuthInfo struct {
 	ServerPasscode string
 	Passcode       string
 	Host           bool
+	Editor         bool
 }
 
 // SelectQuestion is a message that the clients sends to indicate the question
@@ -208,3 +209,18 @@ type ClientTestMessage struct {
 
 // CancelGame is for the host to indicate the current game should be closed.
 type CancelGame struct{}
+
+// ---- EDITOR MESSAGES -----
+// Requests that the server show the shows available
+type RequestShows struct{}
+
+// Tells the server to select a show for editing
+type SelectShow struct {
+	ShowID string
+}
+
+// Tells the server to add a new category for editing
+type AddCategory struct {
+	Name  string
+	Round string
+}

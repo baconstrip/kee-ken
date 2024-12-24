@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/baconstrip/kiken/message"
 	"golang.org/x/net/websocket"
@@ -25,6 +26,7 @@ type Server struct {
 	index      *template.Template
 	clientPage *template.Template
 	hostPage   *template.Template
+	editorPage *template.Template
 
 	sessionManager SessionManager
 
@@ -48,10 +50,14 @@ func (s *Server) verifyAuthenticated(r *http.Request) (SessionID, SessionVar, er
 	}
 
 	s.sessionManager.mu.RLock()
+	defer s.sessionManager.mu.RUnlock()
 	vars, ok := s.sessionManager.sessions[SessionID(session)]
-	s.sessionManager.mu.RUnlock()
 	if !ok {
-		return 0, SessionVar{}, fmt.Errorf("user not authenticated")
+		vars, ok := s.sessionManager.editorSessions[SessionID(session)]
+		if !ok {
+			return 0, SessionVar{}, fmt.Errorf("user not authenticated")
+		}
+		return SessionID(session), vars, nil
 	}
 
 	return SessionID(session), vars, nil
@@ -154,9 +160,41 @@ func (s *Server) clientDispatcher(sid SessionID) {
 	}
 }
 
+func (s *Server) editorInteractiveHandler(ws *websocket.Conn) {
+	sid, vars, err := s.verifyAuthenticated(ws.Request())
+	if err != nil {
+		ws.Close()
+		return
+	}
+
+	if !vars.editor {
+		log.Printf("Non-editor tried to join as an editor, probable bug: %v", vars.name)
+		ws.Close()
+		return
+	}
+
+	s.sessionManager.addConnection(sid, ws)
+
+	go s.clientWriter(sid)
+	go s.clientReader(sid, ws)
+	go s.clientDispatcher(sid)
+
+	// Wait forever
+	for {
+		time.Sleep(10 * time.Minute)
+	}
+}
+
 func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
 	sid, vars, err := s.verifyAuthenticated(ws.Request())
 	if err != nil {
+		ws.Close()
+		return
+	}
+
+	if vars.editor {
+		// editor trying to join as a player? probably a bug
+		log.Printf("Editor attempted to join as a player, probable bug, name: %v", vars.name)
 		ws.Close()
 		return
 	}
@@ -199,6 +237,13 @@ func (s *Server) hostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) editorHandler(w http.ResponseWriter, r *http.Request) {
+	err := s.editorPage.ExecuteTemplate(w, "editor", nil)
+	if err != nil {
+		log.Printf("Error loading editor page: %v", err)
+	}
+}
+
 func writeError(w http.ResponseWriter, msg string, code int) {
 	m, err := json.Marshal(&message.ServerError{
 		Error: msg,
@@ -214,6 +259,45 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 func writeJSON(w http.ResponseWriter, msg interface{}) {
 	e := json.NewEncoder(w)
 	e.Encode(msg)
+}
+
+// TODO: make these have their own file
+// Check if the string contains no punctuation and only common scripts
+func isValidName(str string) bool {
+	for _, r := range str {
+		// Check for punctuation marks
+		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
+			return false
+		}
+
+		// Check if the character belongs to a valid script (Latin, Greek, Cyrillic, or CJK)
+		if !(unicode.IsLetter(r) || runeIsCJK(r) || runeIsEmoji(r)) {
+			return false
+		}
+	}
+	return true
+}
+
+// Check if the rune is a CJK character (Chinese, Japanese, Korean)
+func runeIsCJK(r rune) bool {
+	// Unicode range for CJK characters (Chinese, Japanese, Korean)
+	return (r >= 0x4E00 && r <= 0x9FFF) || // CJK Ideographs
+		(r >= 0x3040 && r <= 0x309F) || // Hiragana (Japanese)
+		(r >= 0x30A0 && r <= 0x30FF) || // Katakana (Japanese)
+		(r >= 0xAC00 && r <= 0xD7AF) // Hangul (Korean)
+}
+
+// Check if the rune is an emoji character
+func runeIsEmoji(r rune) bool {
+	// Unicode ranges for emojis
+	return (r >= 0x1F600 && r <= 0x1F64F) || // Emoticons
+		(r >= 0x1F300 && r <= 0x1F5FF) || // Symbols and pictographs
+		(r >= 0x1F680 && r <= 0x1F6FF) || // Transport and map symbols
+		(r >= 0x1F700 && r <= 0x1F77F) || // Alchemical symbols
+		(r >= 0x2600 && r <= 0x26FF) || // Miscellaneous symbols
+		(r >= 0x2700 && r <= 0x27BF) || // Dingbats
+		(r >= 0x2B50 && r <= 0x2B50) || // Star emoji
+		(r >= 0x1F900 && r <= 0x1F9FF) // Supplemental symbols and pictographs
 }
 
 func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
@@ -233,10 +317,16 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 	serverPasscode := r.PostFormValue("ServerPasscode")
 	passcode := r.PostFormValue("Passcode")
 	hostRaw := r.PostFormValue("Host")
+	editorRaw := r.PostFormValue("Editor")
 
 	host, err := strconv.ParseBool(hostRaw)
 	if err != nil {
 		writeError(w, "Bad request", 1003)
+		return
+	}
+	editor, err := strconv.ParseBool(editorRaw)
+	if err != nil {
+		writeError(w, "Bad request", 1090)
 		return
 	}
 
@@ -245,10 +335,42 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 		ServerPasscode: serverPasscode,
 		Passcode:       passcode,
 		Host:           host,
+		Editor:         editor,
 	}
 
+	// Various checks
+	if len(authInfo.Name) > 50 {
+		writeError(w, "Name is too long", 1091)
+		return
+	}
 	if authInfo.Name == "" {
 		writeError(w, "Name required but not provided", 1013)
+		return
+	}
+
+	if !isValidName(authInfo.Name) {
+		writeError(w, "Name contains invalid characters", 1092)
+		return
+	}
+
+	if authInfo.Editor {
+		if authInfo.ServerPasscode != s.passcode {
+			writeError(w, "Bad passcode", 1008)
+			return
+		}
+
+		err := s.sessionManager.createSession(SessionVar{
+			name:   authInfo.Name,
+			editor: true,
+		}, w)
+
+		if err != nil {
+			writeError(w, "Bad request", 1009)
+			log.Printf("Failed to create session for editor: %v", err)
+			return
+		}
+
+		writeJSON(w, &message.AuthSuccess{Msg: "Successfully joined as editor"})
 		return
 	}
 
@@ -385,6 +507,18 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
 		m := message.CancelGame{}
 		err = d.Decode(&m)
 		value = &m
+
+	// Editor messages
+	case "RequestShows":
+		value = &message.RequestShows{}
+	case "SelectShow":
+		m := message.SelectShow{}
+		err = d.Decode(&m)
+		value = &m
+	case "AddCategory":
+		m := message.AddCategory{}
+		err = d.Decode(&m)
+		value = &m
 	default:
 		log.Printf("Unknown message from client: %v", msgType)
 		return message.ClientMessage{}, fmt.Errorf("bad message type: %v", msgType)
@@ -453,6 +587,7 @@ func New(templatePath, staticPath, passcode string, port int, globalLm *Listener
 			connections:     make(map[SessionID]*Connection),
 			names:           make(map[string]SessionID),
 			recentlyDropped: make(map[SessionID]time.Time),
+			editorSessions:  make(map[SessionID]SessionVar),
 		},
 		globalListenerManager: globalLm,
 		gameListenerManager:   gameLm,
@@ -481,12 +616,22 @@ func New(templatePath, staticPath, passcode string, port int, globalLm *Listener
 		filepath.Join(templatePath, "pagetop.html"),
 	))
 
+	server.editorPage = template.Must(template.ParseFiles(
+		filepath.Join(templatePath, "editor.html"),
+		filepath.Join(templatePath, "head.html"),
+		filepath.Join(templatePath, "nav.html"),
+		filepath.Join(templatePath, "jsdefs.html"),
+		filepath.Join(templatePath, "pagetop.html"),
+	))
+
 	server.mux = http.NewServeMux()
 	server.mux.HandleFunc("/", server.indexHandler)
 	server.mux.HandleFunc("/client", server.clientHandler)
+	server.mux.HandleFunc("/editor", server.editorHandler)
 	server.mux.HandleFunc("/host", server.hostHandler)
 	server.mux.HandleFunc("/auth", server.authHandler)
 	server.mux.Handle("/player_game", websocket.Handler(server.playerInteractiveHandler))
+	server.mux.Handle("/editor_ws", websocket.Handler(server.editorInteractiveHandler))
 	server.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 	return server
 }

@@ -6,27 +6,19 @@ authTemplate = `<div class="container">
       <label for="name-field">Name</label>
       <input type="name" class="form-control" id="name-field" placeholder="Pick a name">
     </div>
-    <div class="form-group" v-if="host">
+    <div class="form-group">
       <label for="server-passcode">Server Passcode</label>
       <input type="server-passcode" class="form-control" id="server-passcode" placeholder="Server Passcode">
       <small class="form-text text-muted">
         This was the passcode you set the server up with.
       </small>
     </div>
-    <div class="form-group" v-else>
-      <label for="passcode">Passcode</label>
-      <input type="passcode" class="form-control" id="passcode" placeholder="Some passcode">
-      <small class="form-text text-muted">
-        Please do not use a real password here. This is just a passcode for the game, and may be shared with the server owner.
-      </small>
-    </div>
-    <button type="button" class="btn btn-success" @click="sendAuth()">Join Up!</button>
+    <button type="button" class="btn btn-success" @click="sendAuth()">Enter editor</button>
   </form>
 </div>
 `
 
-Vue.component('auth-window', {
-  props: ['host'],
+Vue.component('editor-auth-window', {
   template: authTemplate,
   data: function () {
     return {
@@ -41,10 +33,10 @@ Vue.component('auth-window', {
         url: "http://" + window.location.host + "/auth",
         data: {
           Name: $("#name-field").val(),
-          Host: baseVue.host == true,
-          Passcode: $("#passcode").val(),
           ServerPasscode: $("#server-passcode").val(),
-          Editor: false,
+          Passcode: "",
+          Host: false,
+          Editor: true,
         },
         success: function () {
           console.log("Success");

@@ -53,3 +53,6 @@ vendor/node_modules/**
 webcontent/static/js/vendor/**
 webcontent/static/css/vendor/**
 server/src/golang.org/**
+
+
+**/.DS_Store

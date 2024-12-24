@@ -175,7 +175,7 @@ func (m *MetaGameDriver) onCancelGameCancel(_ string, host bool, _ message.Clien
 // ------------- testing game helper --------------
 
 func makeTestGame(questions []*question.Question) *Game {
-	standardCategories, err := question.CollateFullCategories(questions)
+	standardCategories, err := question.CollateFullCategories(questions, true)
 	if err != nil {
 		log.Printf("Failed to create categories from questions: %v", err)
 	}
@@ -212,7 +212,6 @@ func makeTestGame(questions []*question.Question) *Game {
 
 	daiichiBoard := NewBoard(common.DAIICHI, daiichiCats...)
 	dainiBoard := NewBoard(common.DAINI, dainiCats...)
-	rand.Seed(time.Now().Unix())
 	owariBoard := NewBoard(common.OWARI, owariCategories[rand.Intn(len(owariCategories))])
 
 	g := New(daiichiBoard, dainiBoard, owariBoard)

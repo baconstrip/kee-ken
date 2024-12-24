@@ -22,6 +22,8 @@ type SessionManager struct {
 	sessions map[SessionID]SessionVar
 	names    map[string]SessionID
 
+	editorSessions map[SessionID]SessionVar
+
 	connections     map[SessionID]*Connection
 	recentlyDropped map[SessionID]time.Time
 }
@@ -36,6 +38,7 @@ type SessionVar struct {
 	name     string
 	passcode string
 	host     bool
+	editor   bool
 }
 
 // createSession generates a random sessionID for a user and stores the vars
@@ -54,7 +57,11 @@ func (s *SessionManager) createSession(vars SessionVar, w http.ResponseWriter) e
 
 	key := SessionID(keyBig.Uint64())
 
-	s.sessions[key] = vars
+	if vars.editor {
+		s.editorSessions[key] = vars
+	} else {
+		s.sessions[key] = vars
+	}
 	s.names[vars.name] = key
 	cookie := http.Cookie{
 		Name:    sessionName,
@@ -156,7 +163,9 @@ func (s *SessionManager) messageAll(msg message.ServerMessage) {
 	defer s.mu.RUnlock()
 
 	for id := range s.connections {
-		s.writeMessage(id, msg)
+		if _, ok := s.sessions[id]; ok {
+			s.writeMessage(id, msg)
+		}
 	}
 }
 
@@ -165,8 +174,10 @@ func (s *SessionManager) messageHost(msg message.ServerMessage) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for id := range s.connections {
-		if s.sessions[id].host {
-			s.writeMessage(id, msg)
+		if _, ok := s.sessions[id]; ok {
+			if s.sessions[id].host {
+				s.writeMessage(id, msg)
+			}
 		}
 	}
 }
@@ -178,8 +189,10 @@ func (s *SessionManager) messagePlayers(msg message.ServerMessage) {
 	defer s.mu.RUnlock()
 
 	for id := range s.connections {
-		if !s.sessions[id].host {
-			s.writeMessage(id, msg)
+		if _, ok := s.sessions[id]; ok {
+			if !s.sessions[id].host {
+				s.writeMessage(id, msg)
+			}
 		}
 	}
 }
@@ -191,6 +204,21 @@ func (s *SessionManager) messagePlayer(msg message.ServerMessage, name string) {
 	defer s.mu.RUnlock()
 
 	for id := range s.connections {
+		if _, ok := s.sessions[id]; ok {
+			if s.sessions[id].name == name {
+				s.writeMessage(id, msg)
+				return
+			}
+		}
+	}
+}
+
+// messageEditor will message an editor user.
+func (s *SessionManager) messageEditor(msg message.ServerMessage, name string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for id := range s.editorSessions {
 		if s.sessions[id].name == name {
 			s.writeMessage(id, msg)
 			return

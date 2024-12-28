@@ -32,6 +32,7 @@ type Server struct {
 
 	globalListenerManager *ListenerManager
 	gameListenerManager   *ListenerManager
+	editorListenerMangaer *ListenerManager
 
 	mux      *http.ServeMux
 	port     int
@@ -76,9 +77,22 @@ func (s *Server) clientWriter(sid SessionID) {
 				if err := websocket.Message.Send(c.soc, string(out)); err != nil {
 					go func() {
 						name, firstLeave, host := s.sessionManager.dropConnection(sid)
+
+						s.sessionManager.mu.RLock()
+						vars, ok := s.sessionManager.sessions[sid]
+						if !ok {
+							s.sessionManager.mu.RUnlock()
+							return
+						}
+						s.sessionManager.mu.RUnlock()
+
 						if firstLeave {
-							s.globalListenerManager.dispatchLeave(name, host)
-							s.gameListenerManager.dispatchLeave(name, host)
+							if !vars.editor {
+								s.globalListenerManager.dispatchLeave(name, host)
+								s.gameListenerManager.dispatchLeave(name, host)
+							} else {
+								s.editorListenerMangaer.dispatchLeave(name, false)
+							}
 						}
 					}()
 					log.Printf("Dropping connection to client with session %v because of error sending message: %v", sid, err)
@@ -103,9 +117,22 @@ func (s *Server) clientReader(sid SessionID, ws *websocket.Conn) {
 		if err != nil {
 			log.Printf("Dropping connection to client with session %v because of error reading input: %v", sid, err)
 			name, firstLeave, host := s.sessionManager.dropConnection(sid)
+
+			s.sessionManager.mu.RLock()
+			vars, ok := s.sessionManager.sessions[sid]
+			if !ok {
+				s.sessionManager.mu.RUnlock()
+				return
+			}
+			s.sessionManager.mu.RUnlock()
+
 			if firstLeave {
-				s.globalListenerManager.dispatchLeave(name, host)
-				s.gameListenerManager.dispatchLeave(name, host)
+				if !vars.editor {
+					s.globalListenerManager.dispatchLeave(name, host)
+					s.gameListenerManager.dispatchLeave(name, host)
+				} else {
+					s.editorListenerMangaer.dispatchLeave(name, false)
+				}
 			}
 			return
 		}
@@ -154,8 +181,12 @@ func (s *Server) clientDispatcher(sid SessionID) {
 			log.Printf("leaving client dispatcher, channel is already closed.")
 			return
 		} else {
-			s.globalListenerManager.dispatchMessage(vars.name, vars.host, msg)
-			s.gameListenerManager.dispatchMessage(vars.name, vars.host, msg)
+			if !vars.editor {
+				s.globalListenerManager.dispatchMessage(vars.name, vars.host, msg)
+				s.gameListenerManager.dispatchMessage(vars.name, vars.host, msg)
+			} else {
+				s.editorListenerMangaer.dispatchMessage(vars.name, false, msg)
+			}
 		}
 	}
 }
@@ -178,6 +209,8 @@ func (s *Server) editorInteractiveHandler(ws *websocket.Conn) {
 	go s.clientWriter(sid)
 	go s.clientReader(sid, ws)
 	go s.clientDispatcher(sid)
+
+	s.editorListenerMangaer.dispatchJoin(vars.name, false)
 
 	// Wait forever
 	for {
@@ -572,13 +605,19 @@ func (s *Server) MessagePlayer(msg message.ServerMessage, name string) {
 	s.sessionManager.messagePlayer(msg, name)
 }
 
+// MessageDitor schedules a message to be sent to the client named by name
+// asynchronously. msg should not be modified after calling this function.
+func (s *Server) MessageEditor(msg message.ServerMessage, name string) {
+	s.sessionManager.messageEditor(msg, name)
+}
+
 // New creates the server that handles all of the communication for the game,
 // including serving the pages for logging in, static content, and hosting the
 // websocket gameplay. The server processes messages and passes them to other
 // parts of the program as messages. As such, a ListenerManager is provided by
 // reference from the other parts of the program, to allow other aspects to
 // register event listeners.
-func New(templatePath, staticPath, passcode string, port int, globalLm *ListenerManager, gameLm *ListenerManager) *Server {
+func New(templatePath, staticPath, passcode string, port int, globalLm *ListenerManager, gameLm *ListenerManager, editorLm *ListenerManager) *Server {
 	server := &Server{
 		port:     port,
 		passcode: passcode,
@@ -591,6 +630,7 @@ func New(templatePath, staticPath, passcode string, port int, globalLm *Listener
 		},
 		globalListenerManager: globalLm,
 		gameListenerManager:   gameLm,
+		editorListenerMangaer: editorLm,
 	}
 	server.index = template.Must(template.ParseFiles(
 		filepath.Join(templatePath, "index.html"),

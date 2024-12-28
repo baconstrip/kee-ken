@@ -3,14 +3,12 @@ package main
 import (
 	"flag"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/baconstrip/kiken/editor"
 	"github.com/baconstrip/kiken/game"
 	"github.com/baconstrip/kiken/question"
 	"github.com/baconstrip/kiken/server"
+	"github.com/baconstrip/kiken/util"
 )
 
 var (
@@ -23,48 +21,6 @@ var (
 	flagDataDir        = flag.String("data-dir", "../data", "Path to location to store shows")
 )
 
-// TODO put this somewhere else
-// expandPath expands a given path by expanding "~" to the user's home directory
-// and resolving "." and ".." to a full absolute path.
-func expandPath(p string) (string, error) {
-	// Expand "~" to the home directory
-	if strings.HasPrefix(p, "~") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		p = filepath.Join(homeDir, p[1:]) // Replace ~ with home directory
-	}
-
-	// Resolve "." and ".." and convert the path to absolute
-	absPath, err := filepath.Abs(p)
-	if err != nil {
-		return "", err
-	}
-
-	return absPath, nil
-}
-
-// TODO put this somewhere else
-// countFilesInDir counts the number of files in a given directory
-func countFilesInDir(dir string) (int, error) {
-	// Read the directory using os.ReadDir (Go 1.16+)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return 0, err
-	}
-
-	// Count files (not directories)
-	count := 0
-	for _, entry := range entries {
-		if !entry.IsDir() { // Only count regular files
-			count++
-		}
-	}
-
-	return count, nil
-}
-
 func main() {
 	flag.Parse()
 
@@ -75,7 +31,7 @@ func main() {
 	}
 	log.Printf("Finished loading questions")
 
-	dataDir, err := expandPath(*flagDataDir)
+	dataDir, err := util.ExpandPath(*flagDataDir)
 	if err != nil {
 		log.Fatalf("Could not open data dir: %v", err)
 	}
@@ -83,7 +39,7 @@ func main() {
 	// Assign the global dataDir for the editor
 	editor.DataDir = dataDir
 
-	dataFileCount, err := countFilesInDir(dataDir)
+	dataFileCount, err := util.CountFilesInDir(dataDir)
 	if err != nil {
 		log.Fatalf("Error counting data files: %v", err)
 	}
@@ -93,11 +49,15 @@ func main() {
 
 	gameLm := server.NewListenerManager()
 	globalLm := server.NewListenerManager()
+	editorLm := server.NewListenerManager()
 
-	s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, globalLm, gameLm)
+	s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, globalLm, gameLm, editorLm)
 
 	metagame := game.NewMetaGameDriver(q, s, gameLm, globalLm)
 	metagame.Start()
+
+	editor := editor.NewEditorDriver(s, editorLm)
+	editor.Start()
 
 	log.Fatal(s.ListenAndServe())
 }

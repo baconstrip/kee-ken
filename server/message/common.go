@@ -141,6 +141,15 @@ type AvailableShows struct {
 	Shows map[string]string
 }
 
+// SetEditorError shows a client an error in the editor.
+type SetEditorError struct {
+	Message string
+	Code    int
+}
+
+type UpdateEditorBoards struct {
+}
+
 // ------- BEGIN CLIENT MESSAGES --------
 
 // AuthInfo defines a message that the client sends to the server to provide

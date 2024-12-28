@@ -180,6 +180,10 @@ func decodeQuestions(i *interface{}) ([]*Question, error) {
 		hasher.Write([]byte(prompt + category))
 		sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 
+		if answer == "" {
+			answer = "&lt;No answer provided&rt;"
+		}
+
 		question := &Question{
 			Category: category,
 			Value:    value,

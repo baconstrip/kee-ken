@@ -30,8 +30,10 @@ compile and run.
 
 First clone the project and navigate to the directory you checked it out into.
 
+**NOTE: The project must be cloned using the --recurse-submodules flag!**
+
 ```sh
-git clone https://github.com/baconstrip/kee-ken
+git clone --recurse-submodules https://github.com/baconstrip/kee-ken
 cd ./kee-ken
 ```
 

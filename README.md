@@ -71,7 +71,8 @@ included script:
 cd server
 go get
 go build
-./test_in_place.sh --question-list="../example/example_questions.json"
+mkdir ../data
+./test_in_place.sh -question-source="../example/example_questions.json"
 ```
 
 Note the server requires the extra flag "question-list," which instructs the

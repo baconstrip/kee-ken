@@ -23,8 +23,18 @@ On Debian derivatives, you can install the required dependencies with:
 apt install golang-go npm
 ```
 
+### Compatibility Information
+
 This is built and tested with Go version 1.18, and requires at least 1.16 to 
 compile and run.
+
+It is recommended that you use an older version of node when building this
+project, such as version 14.10.0. If using nvm, run:
+
+```
+nvm install 14.10.0
+nvm use 14.10.0
+```
 
 ### Building
 

@@ -75,7 +75,7 @@ mkdir ../data
 ./test_in_place.sh -question-source="../example/example_questions.json"
 ```
 
-Note the server requires the extra flag "question-list," which instructs the
+Note the server requires the extra flag "question-source," which instructs the
 server where to look for questions. In this case, the example included in this
 repository.
 

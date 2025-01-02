@@ -23,15 +23,27 @@ On Debian derivatives, you can install the required dependencies with:
 apt install golang-go npm
 ```
 
+### Compatibility Information
+
 This is built and tested with Go version 1.18, and requires at least 1.16 to 
 compile and run.
+
+It is recommended that you use an older version of node when building this
+project, such as version 14.10.0. If using nvm, run:
+
+```
+nvm install 14.10.0
+nvm use 14.10.0
+```
 
 ### Building
 
 First clone the project and navigate to the directory you checked it out into.
 
+**NOTE: The project must be cloned using the --recurse-submodules flag!**
+
 ```sh
-git clone https://github.com/baconstrip/kee-ken
+git clone --recurse-submodules https://github.com/baconstrip/kee-ken
 cd ./kee-ken
 ```
 
@@ -59,10 +71,11 @@ included script:
 cd server
 go get
 go build
-./test_in_place.sh --question-list="../example/example_questions.json"
+mkdir ../data
+./test_in_place.sh -question-source="../example/example_questions.json"
 ```
 
-Note the server requires the extra flag "question-list," which instructs the
+Note the server requires the extra flag "question-source," which instructs the
 server where to look for questions. In this case, the example included in this
 repository.
 

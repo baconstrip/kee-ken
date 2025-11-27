@@ -54,5 +54,6 @@ webcontent/static/js/vendor/**
 webcontent/static/css/vendor/**
 server/src/golang.org/**
 
+server/local_test.sh
 
 **/.DS_Store

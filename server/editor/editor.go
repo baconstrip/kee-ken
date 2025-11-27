@@ -73,7 +73,8 @@ func (e *EditorDriver) onSelectShowActivateShow(name string, _ bool, msg message
 
 	filepath := e.knownShows[id]
 
-	show, err := OpenShow(filepath)
+	// show
+	_, err := OpenShow(filepath)
 
 	if err != nil {
 		log.Printf("Failed to open game in editor: %v", err)
@@ -87,10 +88,11 @@ func (e *EditorDriver) onSelectShowActivateShow(name string, _ bool, msg message
 		return errors.New("failed to open game in editor")
 	}
 
+	return nil
 }
 
 func (e *EditorDriver) onJoinManageEditor(name string, _ bool) error {
-	m.sessions[name] = &EditorSession{}
+	//m.sessions[name] = &EditorSession{}
 	return nil
 }
 

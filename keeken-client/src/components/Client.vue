@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onBeforeMount } from 'vue';
 
 import eventBus from '../eventbus';
 
@@ -11,6 +11,7 @@ import Question from './Question.vue';
 import PlayerList from './PlayerList.vue';
 import Auth from './Auth.vue';
 import { useRoute } from 'vue-router';
+import { setListeners } from '@/inputs';
 
 const ws = ref<WebSocket | null>(null);
 const joined = ref(false);
@@ -29,7 +30,7 @@ const owariBids = ref<any>(null);
 
 const yourMoney = ref(-1);
 
-const questionComponent = ref<string | null>(null);
+// const questionComponent = ref<string | null>(null);
 
 const duration = ref(0);
 const answeringPlayer = ref<string | null>(null);
@@ -47,10 +48,15 @@ const wsMessageListener = (rawMessage: any) => {
     console.log(msg);
 
     if (msg["Type"] == "BoardOverview") {
+        if (msg["Data"].Round == "3") {
+            // Owari round
+            board.value = null;
+            return;
+        }
         board.value = msg["Data"];
     }
     if (msg["Type"] == "QuestionPrompt") {
-        questionComponent.value = "question";
+        // questionComponent.value = "question";
         question.value = msg["Data"].Question;
         answer.value = msg["Data"].Answer || "";
     }
@@ -75,7 +81,7 @@ const wsMessageListener = (rawMessage: any) => {
     }
     if (msg["Type"] == "HideQuestion") {
         eventBus.emit("hideQuestion");
-        questionComponent.value = null;
+        // questionComponent.value = null;
         answeringPlayer.value = null;
         duration.value = 0;
         responsesClosed.value = false;
@@ -92,6 +98,7 @@ const wsMessageListener = (rawMessage: any) => {
     }
     if (msg["Type"] == "ShowOwariPrompt") {
         owariPrompt.value = msg["Data"].Prompt;
+        eventBus.emit("hideBid");
     }
     if (msg["Type"] == "ShowOwariResults") {
         owariBids.value = msg["Data"].Bids;
@@ -110,7 +117,7 @@ const wsMessageListener = (rawMessage: any) => {
 };
 
 const join = () => {
-    ws.value = new WebSocket('ws://' + window.location.host + '/player_game');
+    ws.value = new WebSocket('ws://' + window.location.host + '/ws/game');
     ws.value.onopen = function (e) {
         joined.value = true;
         errorMessages.value = "";
@@ -136,7 +143,7 @@ const sendWSMessage = (type: string, data: any) => {
 };
 
 const sendSelect = (e: any) => {
-    sendWSMessage("SelectQuestion", { ID: e.value });
+    sendWSMessage("SelectQuestion", { ID: e });
 };
 
 const sendFinishReading = () => {
@@ -176,17 +183,8 @@ const sendCancelGame = () => {
 };
 // ------------------------------------------------
 
-
 // ------------- Global page listeners ----------------
-document.addEventListener("keypress", function (e) {
-    if (e.key == " ") {
-        eventBus.emit("spacePress");
-    }
-});
-
-document.addEventListener("touchstart", function (e) {
-    eventBus.emit("spacePress");
-});
+setListeners();
 // ----------------------------------------------------
 
 // ------------- EventBus listeners ----------------
@@ -221,11 +219,11 @@ eventBus.on("authReady", join);
             Game</button>
         <Alert message="Connecting to the server..." v-if="ws == null && joined">
         </Alert>
-        <component v-bind:is="questionComponent" v-bind:question="Question" v-if="questionComponent" :key="Question"
+        <Question v-bind:question="question" v-if="question != ''" 
             v-bind:answer="answer" v-bind:host="host" v-bind:duration="duration"
             v-bind:answeringPlayer="answeringPlayer" v-bind:responsesClosed="responsesClosed">
-        </component>
-        <Owari v-if="Owari" v-bind:category="Owari" v-bind:prompt="owariPrompt" v-bind:answers="owariAnswers"
+        </Question>
+        <Owari v-if="owari" v-bind:category="owari" v-bind:prompt="owariPrompt" v-bind:answers="owariAnswers"
             v-bind:bids="owariBids" v-bind:money="yourMoney" v-bind:host="host">
         </Owari>
         <Auth v-bind:host="host" v-if="!joined">

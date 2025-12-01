@@ -2,6 +2,9 @@
 import { onBeforeUnmount, ref } from 'vue';
 import eventBus from '../eventbus';
 
+// Prevent tailwind from purging these classes
+const unused = ['bg-error', 'bg-warning', 'bg-success'];
+
 const { duration } = defineProps<{
     duration: any,
 }>();
@@ -10,8 +13,9 @@ const start = ref(0);
 const style = ref({
     width: "100%",
     "transition-duration": "0.1s",
+    height: "100%",
 });
-const color = ref('danger');
+const color = ref('error');
 
 const beginCountdownListener = (e: string) => {
     console.log("began countdown with duration: " + duration);
@@ -38,7 +42,11 @@ const beginCountdownListener = (e: string) => {
     }
 };  
 
-const classes = ref(['progress-bar', 'bg-' + color.value]);
+const colorClass = () => {
+    return 'bg-' + color.value;
+};
+
+// const colorClass = ref('bg-' + color.value);
 
 eventBus.on("beginCountdown", beginCountdownListener);
 onBeforeUnmount(() => {
@@ -49,6 +57,6 @@ onBeforeUnmount(() => {
 
 <template>
 <div class="progress" style="height: 20px;">
-  <div v-bind:class="classes" role="progressbar" v-bind:style="style"></div>
+  <div class="progress-bar" :class="colorClass()" role="progressbar" :style="style"></div>
 </div>
 </template>

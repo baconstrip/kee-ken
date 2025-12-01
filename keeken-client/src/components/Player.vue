@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 const { name, money, connected, selecting } = defineProps<{
     name: string,
-    money: string,
+    money: Number,
     connected: boolean,
     selecting: boolean,
 }>()

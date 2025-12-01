@@ -69,7 +69,7 @@ func (s *Server) clientWriter(sid SessionID) {
 		err := s.sessionManager.withConnection(sid, func(c *Connection) error {
 			select {
 			case msg := <-c.out:
-				log.Printf("Sending message to client: %+v", msg.Data)
+				log.Printf("Sending message to client with type %v \n\t\t%+v", msg.Type, msg.Data)
 				out, err := json.Marshal(msg)
 				if err != nil {
 					log.Printf("Error encoding messsage for client: %v", err)
@@ -222,6 +222,7 @@ func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
 	sid, vars, err := s.verifyAuthenticated(ws.Request())
 	if err != nil {
 		ws.Close()
+		log.Printf("Unauthenticated client attempted to join as a player.")
 		return
 	}
 
@@ -562,7 +563,7 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
 	if value == nil {
 		return message.ClientMessage{}, fmt.Errorf("nil message from client, discarding")
 	}
-	log.Printf("Decoded message from client: %+v", value)
+	log.Printf("Decoded message from client with type %v\n\t\t%+v", msgType, value)
 	return message.ClientMessage{
 		Type: msgType,
 		Data: value,
@@ -666,12 +667,12 @@ func New(templatePath, staticPath, passcode string, port int, globalLm *Listener
 
 	server.mux = http.NewServeMux()
 	server.mux.HandleFunc("/", server.indexHandler)
-	server.mux.HandleFunc("/client", server.clientHandler)
-	server.mux.HandleFunc("/editor", server.editorHandler)
-	server.mux.HandleFunc("/host", server.hostHandler)
-	server.mux.HandleFunc("/auth", server.authHandler)
-	server.mux.Handle("/player_game", websocket.Handler(server.playerInteractiveHandler))
-	server.mux.Handle("/editor_ws", websocket.Handler(server.editorInteractiveHandler))
+	// server.mux.HandleFunc("/client", server.clientHandler)
+	// server.mux.HandleFunc("/editor", server.editorHandler)
+	// server.mux.HandleFunc("/host", server.hostHandler)
+	server.mux.HandleFunc("/api/auth", server.authHandler)
+	server.mux.Handle("/ws/game", websocket.Handler(server.playerInteractiveHandler))
+	server.mux.Handle("/ws/editor", websocket.Handler(server.editorInteractiveHandler))
 	server.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 	return server
 }

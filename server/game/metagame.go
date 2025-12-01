@@ -30,11 +30,12 @@ type MetaGameDriver struct {
 	host    *PlayerStats
 }
 
-func NewMetaGameDriver(questions []*question.Question, s *server.Server, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
+func NewMetaGameDriver(questions []*question.Question, s *server.Server, startingPhase string, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
 	config := Configuration{
 		ChanceTime:         7 * time.Second,
 		DisambiguationTime: 200 * time.Millisecond,
 		AnswerTime:         10 * time.Second,
+		StartingPhase:      startingPhase,
 	}
 
 	return &MetaGameDriver{

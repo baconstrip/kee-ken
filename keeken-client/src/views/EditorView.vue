@@ -13,7 +13,7 @@ const { board } = defineProps<{
 
 const join = () => {
     //$("#connect-button").addClass("d-none");
-    ws.value = new WebSocket('ws://' + window.location.host + '/editor_ws');
+    ws.value = new WebSocket('ws://' + window.location.host + '/ws/editor');
     ws.value.onopen = function (e) {
         joined.value = true;
         errorMessages.value = "";

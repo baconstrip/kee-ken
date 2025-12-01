@@ -67,6 +67,7 @@ func (s *SessionManager) createSession(vars SessionVar, w http.ResponseWriter) e
 		Name:    sessionName,
 		Value:   strconv.FormatUint(uint64(key), 10),
 		Expires: time.Now().Add(time.Hour * 24),
+		Path:    "/",
 	}
 	http.SetCookie(w, &cookie)
 	return nil

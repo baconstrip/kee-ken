@@ -25,6 +25,10 @@ type Configuration struct {
 
 	// How long players are given to answer a question.
 	AnswerTime time.Duration
+
+	// StartingPhase is the phase the game should start at.
+	// one of: "daiichi", "daini", "owari"
+	StartingPhase string
 }
 
 // GameDriver is the main object that manages a game.
@@ -83,26 +87,53 @@ func (g *GameDriver) sendUpdateBoard() {
 	g.server.MessageAll(overview)
 }
 
-func (g *GameDriver) sendOwari() {
+func (g *GameDriver) sendOwariHost() {
 	cat := g.gameState.Boards[common.OWARI-1].Categories[0]
 	owari := message.BeginOwari{Category: cat.Snapshot().ToCategoryOverview()}
-	for _, ply := range g.metagame.players {
-		plyOwari := owari
-		plyOwari.Money = ply.Money
-		g.server.MessagePlayer(server.EncodeServerMessage(&plyOwari), ply.Name)
-	}
 	g.server.MessageHost(server.EncodeServerMessage(&owari))
+}
+
+func (g *GameDriver) sendOwariPlayer(name string) {
+	cat := g.gameState.Boards[common.OWARI-1].Categories[0]
+	owari := message.BeginOwari{Category: cat.Snapshot().ToCategoryOverview()}
+	plyOwari := owari
+	plyOwari.Money = g.metagame.players[name].Money
+	g.server.MessagePlayer(server.EncodeServerMessage(&plyOwari), name)
+}
+
+func (g *GameDriver) sendOwari() {
+	g.sendOwariHost()
+	for name := range g.metagame.players {
+		g.sendOwariPlayer(name)
+	}
+}
+
+func (g *GameDriver) showOwariPromptHost() {
+	ques := g.gameState.Boards[common.OWARI-1].Categories[0].Questions[0]
+	snap := ques.Snapshot()
+	hostPrompt := snap.ToQuestionPrompt(true)
+	g.server.MessageHost(server.EncodeServerMessage(&message.ShowOwariPrompt{Prompt: hostPrompt}))
+}
+
+func (g *GameDriver) showOwariPromptPlayer(name string) {
+	ques := g.gameState.Boards[common.OWARI-1].Categories[0].Questions[0]
+	snap := ques.Snapshot()
+	playerPrompt := snap.ToQuestionPrompt(false)
+	g.server.MessagePlayer(server.EncodeServerMessage(&message.ShowOwariPrompt{Prompt: playerPrompt}), name)
 }
 
 // showOwariPrompt should only be called after obtaining the mutex.
 func (g *GameDriver) showOwariPrompt() {
 	g.gameState.currentStatus = STATUS_OWARI_AWAIT_ANSWERS
-	ques := g.gameState.Boards[common.OWARI-1].Categories[0].Questions[0]
-	snap := ques.Snapshot()
-	hostPrompt := snap.ToQuestionPrompt(true)
-	playerPrompt := snap.ToQuestionPrompt(false)
-	g.server.MessagePlayers(server.EncodeServerMessage(&message.ShowOwariPrompt{Prompt: playerPrompt}))
-	g.server.MessageHost(server.EncodeServerMessage(&message.ShowOwariPrompt{Prompt: hostPrompt}))
+	g.showOwariPromptHost()
+	for name := range g.metagame.players {
+		g.showOwariPromptPlayer(name)
+	}
+}
+
+func (g *GameDriver) showOwariAnswer(name string) {
+	msg := message.ShowOwariResults{Answers: g.owariState.answers, Bids: g.owariState.bids}
+	g.server.MessagePlayer(server.EncodeServerMessage(&msg), name)
 }
 
 // showOwariAnswers should only be called after obtaining the mutex.
@@ -138,8 +169,25 @@ func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
 	if b == nil {
 		return nil
 	}
-	msg := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
-	g.server.MessagePlayer(msg, name)
+
+	if !g.gameState.IsOwariState() {
+		msg := server.EncodeServerMessage(b.Snapshot().ToBoardOverview())
+		g.server.MessagePlayer(msg, name)
+	} else {
+		switch g.gameState.currentStatus {
+		case STATUS_ACCEPTING_BIDS:
+			g.sendOwariPlayer(name)
+		case STATUS_OWARI_AWAIT_ANSWERS:
+			g.sendOwariPlayer(name)
+			g.showOwariPromptPlayer(name)
+		case STATUS_SHOWING_OWARI:
+			g.sendOwariPlayer(name)
+			g.showOwariPromptPlayer(name)
+			g.showOwariAnswer(name)
+		default:
+			log.Fatalf("Unhandled Owari state on join: %v", g.gameState.currentStatus)
+		}
+	}
 
 	return nil
 }
@@ -238,7 +286,7 @@ func (g *GameDriver) OnSelectQuestionMessageShowQuestion(name string, host bool,
 
 	q := g.gameState.FindQuestion(sel.ID)
 	if q == nil {
-		e := server.EncodeServerMessage(message.ServerError{Error: "Bad question", Code: 2000})
+		e := server.EncodeServerMessage(&message.ServerError{Error: "Bad question", Code: 2000})
 		g.server.MessagePlayer(e, name)
 		log.Printf("Bad question from client: %v", sel.ID)
 		return nil
@@ -467,6 +515,8 @@ func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg 
 		return nil
 	}
 
+	g.gameState.currentStatus = STATUS_SHOWING_OWARI
+
 	ans := msg.Data.(*message.FreeformAnswer).Message
 	g.owariState.answers[name] = ans
 	// Check to see if all answers are in.
@@ -608,7 +658,20 @@ func NewGameDriver(s *server.Server, game *Game, lm *server.ListenerManager, con
 	lm.RegisterMessage("EnterBid", driver.OnEnterBidAddBid)
 	lm.RegisterMessage("FreeformAnswer", driver.OnFreeformAnswerAddAnswerOwari)
 
-	driver.gameState.currentRound = common.DAIICHI
+	switch config.StartingPhase {
+	case "daini":
+		driver.gameState.currentRound = common.DAINI
+	case "owari":
+		driver.gameState.currentRound = common.OWARI
+		// give all players some starting money to allow for bids
+		for _, ply := range metagame.players {
+			ply.Money = 1000
+		}
+	default:
+		// Default to daiichi
+		driver.gameState.currentRound = common.DAIICHI
+	}
+
 	driver.gameState.currentStatus = STATUS_PRESTART
 
 	return driver
@@ -625,7 +688,6 @@ func (g *GameDriver) StartGame(name string) error {
 	}
 
 	if len(g.metagame.players) == 0 {
-
 		e := server.EncodeServerMessage(&message.ServerError{Error: "Please wait for players to join before starting", Code: 2001})
 		g.server.MessagePlayer(e, name)
 		return nil
@@ -645,10 +707,16 @@ func (g *GameDriver) StartGame(name string) error {
 		i++
 	}
 
+	if g.config.StartingPhase == "owari" {
+		g.gameState.currentStatus = STATUS_ACCEPTING_BIDS
+	} else {
+		g.gameState.currentStatus = STATUS_SHOWING_BOARD
+	}
+
 	g.sendUpdateBoard()
 	g.metagame.sendUpdatePlayers()
 
-	g.gameState.currentStatus = STATUS_SHOWING_BOARD
+	//g.gameState.currentStatus = STATUS_SHOWING_BOARD
 
 	return nil
 }

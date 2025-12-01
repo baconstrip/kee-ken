@@ -16,8 +16,8 @@ const select = (e: MouseEvent) => {
         elem = elem.parentElement as HTMLElement;
     }
     var id = elem.getAttribute("qid");
-    if (elem.getAttribute("played")) {
-        return;
+    if (elem.getAttribute("played")?.toLowerCase() == "true") {
+      return;
     }
     eventBus.emit("selectQuestion", id as string);
 };

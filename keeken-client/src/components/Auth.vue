@@ -17,12 +17,16 @@ const serverPasscodeField = ref<string>("");
 
 
 const sendAuth = () => {
-  axios.post("http://" + window.location.host + "/auth", {
+  axios.post("http://" + window.location.host + "/api/auth", {
     Name: nameField.value,
     Host: host == true,
     Passcode: passcodeField.value,
     ServerPasscode: serverPasscodeField.value,
     Editor: false,
+  }, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
   }).then(() => {
     console.log("Auth Success");
     eventBus.emit("authReady");

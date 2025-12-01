@@ -17,6 +17,7 @@ type Events = {
     "moveOn"?: null,
     "authReady"?: null,
     "hideQuestion"?: null,
+    "hideBid"?: null,
 };
 
 const eventBus = mitt<Events>();

@@ -5,6 +5,6 @@ import Client from '@/components/Client.vue';
 
 <template>
   <main>
-    <Client></Client>
+    <Client :host="true" :spectator="false"></Client>
   </main>
 </template>

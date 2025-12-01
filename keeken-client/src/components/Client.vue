@@ -38,9 +38,14 @@ const responsesClosed = ref(false);
 
 const route = useRoute();
 
-const host = computed(() => {
-    return route.path.includes("host");
-});
+const { host, spectator } = defineProps<{
+    host: boolean,
+    spectator: boolean,
+}>();
+
+// const host = computed(() => {
+//     return route.path.includes("host");
+// });
 
 // ------------- WebSocket receivers ----------------
 const wsMessageListener = (rawMessage: any) => {

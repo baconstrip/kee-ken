@@ -18,8 +18,8 @@ defineProps<{
       Cancel Game!
     </button>
     <div class="row text-center justify-content-end">
-      <RoundCounter v-bind:board="board"></RoundCounter>
-      <Hostplayer v-bind:name="hostName"></Hostplayer>
+      <RoundCounter :board="board"></RoundCounter>
+      <Hostplayer :name="hostName"></Hostplayer>
     </div>
   </div>
 </template>

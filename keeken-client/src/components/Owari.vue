@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
 <template>
     <div class="text-center" id="owari-board">
         <h3>Category: {{ category["Name"] }}</h3>
-        <Alert v-bind:message="message" v-if="message"></Alert>
+        <Alert :message="message" v-if="message"></Alert>
         <form v-if="!submitted && !host && !answers">
             <div class="form-group">
                 <label for="bid">Bid Amount</label> 

@@ -52,7 +52,7 @@ const rows = computed(() => {
               </th>
             </tr>
             <tr v-for="row in rows">
-              <td v-for="question in row" @click="select" v-bind:qid="question.ID" v-bind:played="question.Played">
+              <td v-for="question in row" @click="select" :qid="question.ID" :played="question.Played">
                 <span v-if="!question.Played">{{ question.Value }}</span>
               </td>
             </tr>

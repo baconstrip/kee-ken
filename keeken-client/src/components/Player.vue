@@ -29,11 +29,11 @@ const openAdjustScore = () => {
 
 <template>
     <div class="col text-center" style="border: 2px black solid; background-color: #000">
-        <div class="connection" v-bind:style="connectionStyle">
+        <div class="connection" :style="connectionStyle">
         </div>
         <h2>{{ name }}</h2>
         <h3>{{ money }}</h3>
-        <div class="selecting mx-auto" v-bind:style="selectingStyle">
+        <div class="selecting mx-auto" :style="selectingStyle">
         </div>
         <button v-if="host" class="btn btn-sm btn-warning mt-2" @click="openAdjustScore()">Adjust Score</button>
     </div>

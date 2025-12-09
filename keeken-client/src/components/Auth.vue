@@ -41,7 +41,7 @@ const sendAuth = () => {
 
 <template>
   <div class="container">
-    <Alert v-bind:message="serverError" v-if="serverError">
+    <Alert :message="serverError" v-if="serverError">
     </Alert>
     <form class="login-form">
       <div class="form-group">

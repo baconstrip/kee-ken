@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
         </div>
         <ProgressBar
           v-if="!responsesClosed"
-          v-bind:duration="duration">
+          :duration="duration">
         </ProgressBar>
         <div class="modal-body" v-if="answeringPlayer && !responsesClosed">
           <h2>Player answering: {{ answeringPlayer }}</h2>

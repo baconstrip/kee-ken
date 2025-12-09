@@ -35,10 +35,11 @@ type Connection struct {
 }
 
 type SessionVar struct {
-	name     string
-	passcode string
-	host     bool
-	editor   bool
+	name      string
+	passcode  string
+	host      bool
+	editor    bool
+	spectator bool
 }
 
 // createSession generates a random sessionID for a user and stores the vars

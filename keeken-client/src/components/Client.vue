@@ -39,7 +39,7 @@ const duration = ref(0);
 const answeringPlayer = ref<string | null>(null);
 const responsesClosed = ref(false);
 
-const route = useRoute();
+const _ = useRoute();
 
 const { host, spectator } = defineProps<{
     host: boolean,
@@ -225,10 +225,10 @@ eventBus.on("openAdjustScore", (e: any) => {
         <div class="alert alert-warning" role="alert" v-if="errorMessages">
             <span v-html="errorMessages"></span>
         </div>
-        <Gameheader v-if="ws" v-bind:hostName="hostPlayerName" v-bind:board="board" v-bind:host="host"
-            v-bind:started="!!board">
+        <Gameheader v-if="ws" :hostName="hostPlayerName" :board="board" :host="host"
+            :started="!!board">
         </Gameheader>
-        <Gameboard v-if="board" v-bind:board="board" v-bind:host="host">
+        <Gameboard v-if="board" :board="board" :host="host">
         </Gameboard>
         <Alert message="Waiting for the host to start the game..." v-if="!board && joined">
         </Alert>
@@ -236,18 +236,18 @@ eventBus.on("openAdjustScore", (e: any) => {
             Game</button>
         <Alert message="Connecting to the server..." v-if="ws == null && joined">
         </Alert>
-        <Question v-bind:question="question" v-if="question != ''" 
-            v-bind:answer="answer" v-bind:host="host" v-bind:duration="duration"
-            v-bind:answeringPlayer="answeringPlayer" v-bind:responsesClosed="responsesClosed">
+        <Question :question="question" v-if="question != ''" 
+            :answer="answer" :host="host" :duration="duration"
+            :answeringPlayer="answeringPlayer" :responsesClosed="responsesClosed" :spectator="spectator">
         </Question>
-        <Owari v-if="owari" v-bind:category="owari" v-bind:prompt="owariPrompt" v-bind:answers="owariAnswers"
-            v-bind:bids="owariBids" v-bind:money="yourMoney" v-bind:host="host">
+        <Owari v-if="owari" :category="owari" :prompt="owariPrompt" :answers="owariAnswers"
+            :bids="owariBids" :money="yourMoney" :host="host">
         </Owari>
-        <Auth v-bind:host="host" v-if="!joined">
+        <Auth :host="host" v-if="!joined" :spectator="spectator">
         </Auth>
-        <Alert v-bind:message="gameErrors" v-if="gameErrors">
+        <Alert :message="gameErrors" v-if="gameErrors">
         </Alert>
-        <PlayerList v-if="players" v-bind:players="players" :host="host">
+        <PlayerList v-if="players" :players="players" :host="host">
         </PlayerList>
         <AdjustScore :player="''" v-if="host && !!board" ref="adjustScoreComponent">
         </AdjustScore>

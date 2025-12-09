@@ -3,13 +3,14 @@ import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import eventBus from '../eventbus';
 import ProgressBar from './ProgressBar.vue';
 
-const { question, answer, duration, answeringPlayer, responsesClosed, host } = defineProps<{
+const { question, answer, duration, answeringPlayer, responsesClosed, host, spectator } = defineProps<{
     question: string,
     answer: string,
     duration: number,
     answeringPlayer: string | null,
     responsesClosed: boolean,
     host: boolean,
+    spectator: boolean,
 }>();
 
 
@@ -40,6 +41,10 @@ const finishTimer = () => {
 
 const spacePress = () => {
   if (host) {
+    return;
+  }
+
+  if (spectator) {
     return;
   }
 

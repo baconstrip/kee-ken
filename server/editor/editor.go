@@ -91,7 +91,7 @@ func (e *EditorDriver) onSelectShowActivateShow(name string, _ bool, msg message
 	return nil
 }
 
-func (e *EditorDriver) onJoinManageEditor(name string, _ bool) error {
+func (e *EditorDriver) onJoinManageEditor(name string, _ bool, _ bool) error {
 	//m.sessions[name] = &EditorSession{}
 	return nil
 }

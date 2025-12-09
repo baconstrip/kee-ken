@@ -7,8 +7,8 @@ import (
 	"github.com/baconstrip/kiken/message"
 )
 
-type JoinListener func(name string, host bool) error
-type LeaveListener func(name string, host bool) error
+type JoinListener func(name string, host bool, spectator bool) error
+type LeaveListener func(name string, host bool, spectator bool) error
 type ClientMessageListener func(name string, host bool, msg message.ClientMessage) error
 
 type ListenerManager struct {
@@ -59,28 +59,28 @@ func (l *ListenerManager) RegisterMessage(messageType string, c ClientMessageLis
 	l.msgListeners[messageType] = append(l.msgListeners[messageType], c)
 }
 
-func (l *ListenerManager) dispatchJoin(name string, host bool) {
+func (l *ListenerManager) dispatchJoin(name string, host bool, spectator bool) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	for _, listener := range l.joinListeners {
 		listenerCpy := listener
 		go func() {
-			if err := listenerCpy(name, host); err != nil {
+			if err := listenerCpy(name, host, spectator); err != nil {
 				log.Printf("Error processing listener for join: %v", err)
 			}
 		}()
 	}
 }
 
-func (l *ListenerManager) dispatchLeave(name string, host bool) {
+func (l *ListenerManager) dispatchLeave(name string, host bool, spectator bool) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	for _, listener := range l.leaveListeners {
 		listenerCpy := listener
 		go func() {
-			if err := listenerCpy(name, host); err != nil {
+			if err := listenerCpy(name, host, spectator); err != nil {
 				log.Printf("Error processing listener for leave: %v", err)
 			}
 		}()

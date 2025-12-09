@@ -5,8 +5,9 @@ import Alert from './Alert.vue';
 
 import eventBus from '../eventbus';
 
-const { host } = defineProps<{
-  host: boolean
+const { host, spectator } = defineProps<{
+  host: boolean,
+  spectator: boolean,
 }>();
 
 const serverError = ref<string>("");
@@ -23,6 +24,7 @@ const sendAuth = () => {
     Passcode: passcodeField.value,
     ServerPasscode: serverPasscodeField.value,
     Editor: false,
+    Spectate: host == false && spectator == true,
   }, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'

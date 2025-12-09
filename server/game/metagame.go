@@ -26,8 +26,9 @@ type MetaGameDriver struct {
 
 	questions []*question.Question
 
-	players map[string]*PlayerStats
-	host    *PlayerStats
+	players    map[string]*PlayerStats
+	spectators map[string]*PlayerStats
+	host       *PlayerStats
 }
 
 func NewMetaGameDriver(questions []*question.Question, s *server.Server, startingPhase string, gameLm *server.ListenerManager, globalLm *server.ListenerManager) *MetaGameDriver {
@@ -39,12 +40,13 @@ func NewMetaGameDriver(questions []*question.Question, s *server.Server, startin
 	}
 
 	return &MetaGameDriver{
-		gameLm:    gameLm,
-		globalLm:  globalLm,
-		config:    config,
-		server:    s,
-		questions: questions,
-		players:   make(map[string]*PlayerStats),
+		gameLm:     gameLm,
+		globalLm:   globalLm,
+		config:     config,
+		server:     s,
+		questions:  questions,
+		players:    make(map[string]*PlayerStats),
+		spectators: make(map[string]*PlayerStats),
 
 		mu: &sync.RWMutex{},
 	}
@@ -84,7 +86,7 @@ func (m *MetaGameDriver) sendUpdatePlayers() {
 
 // ----- Metagame listeners -----
 
-func (m *MetaGameDriver) onJoinSendUpdatePlayersAndAddPlayer(name string, host bool) error {
+func (m *MetaGameDriver) onJoinSendUpdatePlayersAndAddPlayer(name string, host bool, spectator bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -113,7 +115,19 @@ func (m *MetaGameDriver) onJoinSendUpdatePlayersAndAddPlayer(name string, host b
 		return nil
 	}
 
-	m.players[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
+	// If a spectator is returning.
+	if _, ok := m.spectators[name]; ok {
+		m.spectators[name].Connected = true
+		m.sendUpdatePlayers()
+		return nil
+	}
+
+	if spectator {
+		m.spectators[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
+	} else {
+		m.players[name] = &PlayerStats{Money: 0, Name: name, Connected: true}
+	}
+
 	if m.host != nil {
 		msg := server.EncodeServerMessage(&message.HostAdd{Name: m.host.Name})
 		m.server.MessagePlayer(msg, name)
@@ -124,7 +138,7 @@ func (m *MetaGameDriver) onJoinSendUpdatePlayersAndAddPlayer(name string, host b
 	return nil
 }
 
-func (m *MetaGameDriver) onLeaveMarkDisconnected(name string, host bool) error {
+func (m *MetaGameDriver) onLeaveMarkDisconnected(name string, host bool, spectator bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -134,6 +148,11 @@ func (m *MetaGameDriver) onLeaveMarkDisconnected(name string, host bool) error {
 	}
 
 	if m.players[name] == nil {
+		return nil
+	}
+
+	if spectator {
+		m.spectators[name].Connected = false
 		return nil
 	}
 

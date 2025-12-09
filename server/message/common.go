@@ -160,6 +160,7 @@ type AuthInfo struct {
 	Passcode       string
 	Host           bool
 	Editor         bool
+	Spectator      bool
 }
 
 // SelectQuestion is a message that the clients sends to indicate the question

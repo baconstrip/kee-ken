@@ -84,10 +84,10 @@ func (s *Server) clientWriter(sid SessionID) {
 
 						if firstLeave {
 							if !vars.editor {
-								s.globalListenerManager.dispatchLeave(name, host)
-								s.gameListenerManager.dispatchLeave(name, host)
+								s.globalListenerManager.dispatchLeave(name, host, vars.spectator)
+								s.gameListenerManager.dispatchLeave(name, host, vars.spectator)
 							} else {
-								s.editorListenerMangaer.dispatchLeave(name, false)
+								s.editorListenerMangaer.dispatchLeave(name, false, vars.spectator)
 							}
 						}
 					}()
@@ -124,10 +124,10 @@ func (s *Server) clientReader(sid SessionID, ws *websocket.Conn) {
 
 			if firstLeave {
 				if !vars.editor {
-					s.globalListenerManager.dispatchLeave(name, host)
-					s.gameListenerManager.dispatchLeave(name, host)
+					s.globalListenerManager.dispatchLeave(name, host, vars.spectator)
+					s.gameListenerManager.dispatchLeave(name, host, vars.spectator)
 				} else {
-					s.editorListenerMangaer.dispatchLeave(name, false)
+					s.editorListenerMangaer.dispatchLeave(name, false, vars.spectator)
 				}
 			}
 			return
@@ -206,7 +206,7 @@ func (s *Server) editorInteractiveHandler(ws *websocket.Conn) {
 	go s.clientReader(sid, ws)
 	go s.clientDispatcher(sid)
 
-	s.editorListenerMangaer.dispatchJoin(vars.name, false)
+	s.editorListenerMangaer.dispatchJoin(vars.name, false, false)
 
 	// Wait forever
 	for {
@@ -237,8 +237,8 @@ func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
 	go s.clientReader(sid, ws)
 	go s.clientDispatcher(sid)
 
-	s.globalListenerManager.dispatchJoin(vars.name, vars.host)
-	s.gameListenerManager.dispatchJoin(vars.name, vars.host)
+	s.globalListenerManager.dispatchJoin(vars.name, vars.host, vars.spectator)
+	s.gameListenerManager.dispatchJoin(vars.name, vars.host, vars.spectator)
 
 	// Wait forever
 	for {
@@ -310,6 +310,7 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 	passcode := r.PostFormValue("Passcode")
 	hostRaw := r.PostFormValue("Host")
 	editorRaw := r.PostFormValue("Editor")
+	spectatorRaw := r.PostFormValue("Spectate")
 
 	host, err := strconv.ParseBool(hostRaw)
 	if err != nil {
@@ -321,6 +322,11 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "Bad request", 1090)
 		return
 	}
+	spectator, err := strconv.ParseBool(spectatorRaw)
+	if err != nil {
+		writeError(w, "Bad request", 1093)
+		return
+	}
 
 	authInfo := &message.AuthInfo{
 		Name:           name,
@@ -328,6 +334,7 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 		Passcode:       passcode,
 		Host:           host,
 		Editor:         editor,
+		Spectator:      spectator,
 	}
 
 	// Various checks
@@ -413,9 +420,10 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.sessionManager.createSession(SessionVar{
-		name:     authInfo.Name,
-		passcode: authInfo.Passcode,
-		host:     false,
+		name:      authInfo.Name,
+		passcode:  authInfo.Passcode,
+		host:      false,
+		spectator: authInfo.Spectator,
 	}, w)
 
 	if err != nil {

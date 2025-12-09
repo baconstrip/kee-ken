@@ -157,7 +157,7 @@ func (g *GameDriver) playerSelecting() *PlayerStats {
 
 // ------ BEGIN LISTENERS -----
 
-func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
+func (g *GameDriver) OnJoinSendBoard(name string, host bool, spectator bool) error {
 	g.gameState.mu.RLock()
 	defer g.gameState.mu.RUnlock()
 
@@ -192,7 +192,7 @@ func (g *GameDriver) OnJoinSendBoard(name string, host bool) error {
 	return nil
 }
 
-func (g *GameDriver) OnJoinShowQuestionPrompt(name string, host bool) error {
+func (g *GameDriver) OnJoinShowQuestionPrompt(name string, host bool, spectator bool) error {
 	g.gameState.mu.RLock()
 	defer g.gameState.mu.RUnlock()
 
@@ -225,7 +225,7 @@ func (g *GameDriver) makeLowestPlayerSelect() {
 	}
 }
 
-func (g *GameDriver) OnLeaveStopAnswering(name string, host bool) error {
+func (g *GameDriver) OnLeaveStopAnswering(name string, host bool, spectator bool) error {
 	g.gameState.mu.Lock()
 	defer g.gameState.mu.Unlock()
 

@@ -503,6 +503,27 @@ func (g *GameDriver) OnEnterBidAddBid(name string, host bool, msg message.Client
 	return nil
 }
 
+func (g *GameDriver) OnAdjustScoreMessage(name string, host bool, msg message.ClientMessage) error {
+	g.gameState.mu.Lock()
+	defer g.gameState.mu.Unlock()
+
+	if !host {
+		return nil
+	}
+	adj := msg.Data.(*message.AdjustScore)
+
+	// Check which player
+	if ply, ok := g.metagame.players[adj.PlayerName]; ok {
+		ply.Money += adj.Amount
+		g.metagame.sendUpdatePlayers()
+	} else {
+		e := server.EncodeServerMessage(&message.ServerError{Error: "Player not found", Code: 3001})
+		g.server.MessagePlayer(e, name)
+		log.Printf("Adjust score: player not found: %v", adj.PlayerName)
+	}
+	return nil
+}
+
 func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg message.ClientMessage) error {
 	g.gameState.mu.Lock()
 	defer g.gameState.mu.Unlock()
@@ -657,6 +678,7 @@ func NewGameDriver(s *server.Server, game *Game, lm *server.ListenerManager, con
 	lm.RegisterMessage("NextRound", driver.OnNextRoundMessageAdvanceRound)
 	lm.RegisterMessage("EnterBid", driver.OnEnterBidAddBid)
 	lm.RegisterMessage("FreeformAnswer", driver.OnFreeformAnswerAddAnswerOwari)
+	lm.RegisterMessage("AdjustScore", driver.OnAdjustScoreMessage)
 
 	switch config.StartingPhase {
 	case "daini":

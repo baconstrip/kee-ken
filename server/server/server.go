@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	"io"
 	"log"
 	"net/http"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
-	"unicode"
 
 	"github.com/baconstrip/kiken/message"
+	"github.com/baconstrip/kiken/util"
 	"golang.org/x/net/websocket"
 )
 
@@ -23,10 +22,7 @@ const (
 )
 
 type Server struct {
-	index      *template.Template
-	clientPage *template.Template
-	hostPage   *template.Template
-	editorPage *template.Template
+	distDir http.Dir
 
 	sessionManager SessionManager
 
@@ -251,31 +247,32 @@ func (s *Server) playerInteractiveHandler(ws *websocket.Conn) {
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	err := s.index.ExecuteTemplate(w, "index", nil)
+	f, err := s.distDir.Open(r.URL.Path)
 	if err != nil {
-		log.Printf("Error loading index page: %v", err)
-	}
-}
+		indexFile, err := s.distDir.Open("index.html")
+		if err != nil {
+			http.Error(w, "Could not open index file", 500)
+			return
+		}
+		defer indexFile.Close()
+		io.Copy(w, indexFile)
 
-func (s *Server) clientHandler(w http.ResponseWriter, r *http.Request) {
-	err := s.clientPage.ExecuteTemplate(w, "client", nil)
-	if err != nil {
-		log.Printf("Error loading client page: %v", err)
+		return
 	}
-}
 
-func (s *Server) hostHandler(w http.ResponseWriter, r *http.Request) {
-	err := s.hostPage.ExecuteTemplate(w, "host", nil)
-	if err != nil {
-		log.Printf("Error loading client page: %v", err)
+	info, _ := f.Stat()
+	if info.IsDir() {
+		indexFile, err := s.distDir.Open("index.html")
+		if err != nil {
+			http.Error(w, "Could not open index file", 500)
+			return
+		}
+		defer indexFile.Close()
+		io.Copy(w, indexFile)
+		return
 	}
-}
 
-func (s *Server) editorHandler(w http.ResponseWriter, r *http.Request) {
-	err := s.editorPage.ExecuteTemplate(w, "editor", nil)
-	if err != nil {
-		log.Printf("Error loading editor page: %v", err)
-	}
+	http.ServeContent(w, r, r.URL.Path, info.ModTime(), f)
 }
 
 func writeError(w http.ResponseWriter, msg string, code int) {
@@ -293,45 +290,6 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 func writeJSON(w http.ResponseWriter, msg interface{}) {
 	e := json.NewEncoder(w)
 	e.Encode(msg)
-}
-
-// TODO: make these have their own file
-// Check if the string contains no punctuation and only common scripts
-func isValidName(str string) bool {
-	for _, r := range str {
-		// Check for punctuation marks
-		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
-			return false
-		}
-
-		// Check if the character belongs to a valid script (Latin, Greek, Cyrillic, or CJK)
-		if !(unicode.IsLetter(r) || runeIsCJK(r) || runeIsEmoji(r)) {
-			return false
-		}
-	}
-	return true
-}
-
-// Check if the rune is a CJK character (Chinese, Japanese, Korean)
-func runeIsCJK(r rune) bool {
-	// Unicode range for CJK characters (Chinese, Japanese, Korean)
-	return (r >= 0x4E00 && r <= 0x9FFF) || // CJK Ideographs
-		(r >= 0x3040 && r <= 0x309F) || // Hiragana (Japanese)
-		(r >= 0x30A0 && r <= 0x30FF) || // Katakana (Japanese)
-		(r >= 0xAC00 && r <= 0xD7AF) // Hangul (Korean)
-}
-
-// Check if the rune is an emoji character
-func runeIsEmoji(r rune) bool {
-	// Unicode ranges for emojis
-	return (r >= 0x1F600 && r <= 0x1F64F) || // Emoticons
-		(r >= 0x1F300 && r <= 0x1F5FF) || // Symbols and pictographs
-		(r >= 0x1F680 && r <= 0x1F6FF) || // Transport and map symbols
-		(r >= 0x1F700 && r <= 0x1F77F) || // Alchemical symbols
-		(r >= 0x2600 && r <= 0x26FF) || // Miscellaneous symbols
-		(r >= 0x2700 && r <= 0x27BF) || // Dingbats
-		(r >= 0x2B50 && r <= 0x2B50) || // Star emoji
-		(r >= 0x1F900 && r <= 0x1F9FF) // Supplemental symbols and pictographs
 }
 
 func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
@@ -382,8 +340,8 @@ func (s *Server) authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !isValidName(authInfo.Name) {
-		writeError(w, "Name contains invalid characters", 1092)
+	if !util.IsValidName(authInfo.Name) {
+		writeError(w, "Name contains invalid characters, only use common scripts or emoji. Punctuation is not supported", 1092)
 		return
 	}
 
@@ -553,6 +511,10 @@ func decodeClientMessage(msg []byte) (message.ClientMessage, error) {
 		m := message.AddCategory{}
 		err = d.Decode(&m)
 		value = &m
+	case "AdjustScore":
+		m := message.AdjustScore{}
+		err = d.Decode(&m)
+		value = &m
 	default:
 		log.Printf("Unknown message from client: %v", msgType)
 		return message.ClientMessage{}, fmt.Errorf("bad message type: %v", msgType)
@@ -618,7 +580,7 @@ func (s *Server) MessageEditor(msg message.ServerMessage, name string) {
 // parts of the program as messages. As such, a ListenerManager is provided by
 // reference from the other parts of the program, to allow other aspects to
 // register event listeners.
-func New(templatePath, staticPath, passcode string, port int, globalLm *ListenerManager, gameLm *ListenerManager, editorLm *ListenerManager) *Server {
+func New(staticPath, passcode string, port int, globalLm *ListenerManager, gameLm *ListenerManager, editorLm *ListenerManager) *Server {
 	server := &Server{
 		port:     port,
 		passcode: passcode,
@@ -633,47 +595,15 @@ func New(templatePath, staticPath, passcode string, port int, globalLm *Listener
 		gameListenerManager:   gameLm,
 		editorListenerMangaer: editorLm,
 	}
-	server.index = template.Must(template.ParseFiles(
-		filepath.Join(templatePath, "index.html"),
-		filepath.Join(templatePath, "head.html"),
-		filepath.Join(templatePath, "nav.html"),
-		filepath.Join(templatePath, "jsdefs.html"),
-		filepath.Join(templatePath, "pagetop.html"),
-	))
 
-	server.clientPage = template.Must(template.ParseFiles(
-		filepath.Join(templatePath, "client.html"),
-		filepath.Join(templatePath, "head.html"),
-		filepath.Join(templatePath, "nav.html"),
-		filepath.Join(templatePath, "jsdefs.html"),
-		filepath.Join(templatePath, "pagetop.html"),
-	))
-
-	server.hostPage = template.Must(template.ParseFiles(
-		filepath.Join(templatePath, "host.html"),
-		filepath.Join(templatePath, "head.html"),
-		filepath.Join(templatePath, "nav.html"),
-		filepath.Join(templatePath, "jsdefs.html"),
-		filepath.Join(templatePath, "pagetop.html"),
-	))
-
-	server.editorPage = template.Must(template.ParseFiles(
-		filepath.Join(templatePath, "editor.html"),
-		filepath.Join(templatePath, "head.html"),
-		filepath.Join(templatePath, "nav.html"),
-		filepath.Join(templatePath, "jsdefs.html"),
-		filepath.Join(templatePath, "pagetop.html"),
-	))
+	server.distDir = http.Dir(staticPath)
 
 	server.mux = http.NewServeMux()
 	server.mux.HandleFunc("/", server.indexHandler)
-	// server.mux.HandleFunc("/client", server.clientHandler)
-	// server.mux.HandleFunc("/editor", server.editorHandler)
-	// server.mux.HandleFunc("/host", server.hostHandler)
 	server.mux.HandleFunc("/api/auth", server.authHandler)
 	server.mux.Handle("/ws/game", websocket.Handler(server.playerInteractiveHandler))
 	server.mux.Handle("/ws/editor", websocket.Handler(server.editorInteractiveHandler))
-	server.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
+	//server.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 	return server
 }
 

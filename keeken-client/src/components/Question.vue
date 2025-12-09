@@ -13,7 +13,6 @@ const { question, answer, duration, answeringPlayer, responsesClosed, host } = d
 }>();
 
 
-const progressComponent = ref("progressbar");
 const lastStart = ref<Date | null>(null);
 const penalty = ref<Date | null>(null);
 const lockedInterval = ref<number | null>(null);
@@ -103,7 +102,7 @@ onBeforeUnmount(() => {
 <template>
   <dialog class="modal modal-open" id="questionModal" tabindex="-1" role="dialog" data-backdrop="static" :class="{'penalty': showPenalty }" ref="questionModal">
     <div class="modal-box" role="document" style="max-width: 95vw">
-      <div class="modal-content" style="color: black" id="prompt-modal" :class="{ 'lockedout': lockedout }">
+      <div class="modal-content" id="prompt-modal" :class="{ 'lockedout': lockedout }">
         <div class="modal-header">
           <h5 class="modal-title">Question</h5>
         </div>

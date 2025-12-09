@@ -233,3 +233,8 @@ type AddCategory struct {
 	Name  string
 	Round string
 }
+
+type AdjustScore struct {
+	PlayerName string
+	Amount     int
+}

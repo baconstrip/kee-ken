@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeMount } from 'vue';
+import { ref, onMounted, computed, onBeforeMount, useTemplateRef } from 'vue';
 
 import eventBus from '../eventbus';
 
 import Gameboard from './Gameboard.vue';
+import AdjustScore from './AdjustScore.vue';
 import Gameheader from './Gameheader.vue';
 import Alert from './Alert.vue';
 import Owari from './Owari.vue';
@@ -29,6 +30,8 @@ const owariAnswers = ref<any>(null);
 const owariBids = ref<any>(null);
 
 const yourMoney = ref(-1);
+
+const adjustScoreComponent = useTemplateRef<InstanceType<typeof AdjustScore>>('adjustScoreComponent');
 
 // const questionComponent = ref<string | null>(null);
 
@@ -186,6 +189,10 @@ const sendOwariAnswer = (e: any) => {
 const sendCancelGame = () => {
     sendWSMessage("CancelGame", {});
 };
+
+const sendAdjustScore = (e: any) => {
+    sendWSMessage("AdjustScore", { PlayerName: e.playerName, Amount: e.amount });
+};
 // ------------------------------------------------
 
 // ------------- Global page listeners ----------------
@@ -204,6 +211,11 @@ eventBus.on("buzz", sendBuzz);
 eventBus.on("submitBid", sendBid);
 eventBus.on("submitAnswer", sendOwariAnswer);
 eventBus.on("authReady", join);
+eventBus.on("adjustScore", sendAdjustScore);
+
+eventBus.on("openAdjustScore", (e: any) => {
+    adjustScoreComponent.value?.open(e as string);
+});
 // ----------------------------------------------------
 </script>
 
@@ -235,7 +247,9 @@ eventBus.on("authReady", join);
         </Auth>
         <Alert v-bind:message="gameErrors" v-if="gameErrors">
         </Alert>
-        <PlayerList v-if="players" v-bind:players="players">
+        <PlayerList v-if="players" v-bind:players="players" :host="host">
         </PlayerList>
+        <AdjustScore :player="''" v-if="host && !!board" ref="adjustScoreComponent">
+        </AdjustScore>
     </div>
 </template>

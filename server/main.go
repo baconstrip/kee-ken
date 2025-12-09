@@ -13,9 +13,8 @@ import (
 )
 
 var (
-	flagStaticPath    = flag.String("static-path", "../webcontent/static", "Path to static content files")
-	flagTemplatesPath = flag.String("template-path", "../webcontent/templates", "Path to web templates")
-	flagPort          = flag.Int("port", 1986, "Port for the server to listen on")
+	flagStaticPath = flag.String("static-path", "../keeken-client/dist", "Path to static content files")
+	flagPort       = flag.Int("port", 1986, "Port for the server to listen on")
 	// flagQuestionsList  = flag.String("question-list", "", "Path to list of questions, must be set")
 	flagQuestionSource = flag.String("question-source", "", "Path to source for questions")
 	flagPasscode       = flag.String("passcode", "test", "Passcode to use to grant admin privledges")
@@ -69,7 +68,7 @@ func main() {
 	globalLm := server.NewListenerManager()
 	editorLm := server.NewListenerManager()
 
-	s := server.New(*flagTemplatesPath, *flagStaticPath, *flagPasscode, *flagPort, globalLm, gameLm, editorLm)
+	s := server.New(*flagStaticPath, *flagPasscode, *flagPort, globalLm, gameLm, editorLm)
 
 	metagame := game.NewMetaGameDriver(q, s, *flagStartAt, gameLm, globalLm)
 	metagame.Start()

@@ -11,6 +11,7 @@ import Owari from './Owari.vue';
 import Question from './Question.vue';
 import PlayerList from './PlayerList.vue';
 import Auth from './Auth.vue';
+import GameControls from './GameControls.vue';
 import { useRoute } from 'vue-router';
 import { setListeners } from '@/inputs';
 
@@ -221,7 +222,7 @@ eventBus.on("openAdjustScore", (e: any) => {
 
 
 <template>
-    <div id="app" class="container">
+    <div class="flex flex-col h-full w-full">
         <div class="alert alert-warning" role="alert" v-if="errorMessages">
             <span v-html="errorMessages"></span>
         </div>
@@ -251,5 +252,7 @@ eventBus.on("openAdjustScore", (e: any) => {
         </PlayerList>
         <AdjustScore :player="''" v-if="host && !!board" ref="adjustScoreComponent">
         </AdjustScore>
+        <GameControls v-if="host" :host="host" :started="!!board" :board="board">
+        </GameControls>
     </div>
 </template>

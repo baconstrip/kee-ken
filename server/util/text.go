@@ -5,6 +5,10 @@ import "unicode"
 // Check if the string contains no punctuation and only common scripts
 func IsValidName(str string) bool {
 	for _, r := range str {
+		if unicode.IsSpace(r) {
+			continue
+		}
+
 		// Check for punctuation marks
 		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
 			return false

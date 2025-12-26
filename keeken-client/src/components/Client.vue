@@ -24,6 +24,7 @@ const hostPlayerName = ref("");
 const question = ref('');
 const answer = ref('');
 const players = ref<any>(null);
+const openResponses = ref(false);
 
 const owari = ref<any>(null);
 const owariPrompt = ref<any>(null);
@@ -79,6 +80,7 @@ const wsMessageListener = (rawMessage: any) => {
         answeringPlayer.value = null;
         duration.value = msg["Data"].Interval;
         eventBus.emit("beginCountdown", "buzz");
+        openResponses.value = true;
     }
     if (msg["Type"] == "PlayerAnswering") {
         duration.value = msg["Data"].Interval;
@@ -87,6 +89,7 @@ const wsMessageListener = (rawMessage: any) => {
     }
     if (msg["Type"] == "CloseResponses") {
         responsesClosed.value = true;
+        openResponses.value = false;
     }
     if (msg["Type"] == "HideQuestion") {
         eventBus.emit("hideQuestion");
@@ -96,6 +99,7 @@ const wsMessageListener = (rawMessage: any) => {
         responsesClosed.value = false;
         question.value = '';
         answer.value = '';
+        openResponses.value = false;
     }
     if (msg["Type"] == "ServerError") {
         gameErrors.value = msg["Data"].Error;
@@ -164,6 +168,9 @@ const sendBuzz = (e: any) => {
 };
 
 const sendMarkAnswer = (correct: boolean) => {
+    if (host == false || !ws.value) {
+        return;
+    }
     sendWSMessage("MarkAnswer", { Correct: correct == true });
 };
 
@@ -226,8 +233,7 @@ eventBus.on("openAdjustScore", (e: any) => {
         <div class="alert alert-warning" role="alert" v-if="errorMessages">
             <span v-html="errorMessages"></span>
         </div>
-        <Gameheader v-if="ws" :hostName="hostPlayerName" :board="board" :host="host"
-            :started="!!board">
+        <Gameheader v-if="ws" :hostName="hostPlayerName" :board="board" :host="host" :started="!!board">
         </Gameheader>
         <Gameboard v-if="board" :board="board" :host="host">
         </Gameboard>
@@ -237,12 +243,12 @@ eventBus.on("openAdjustScore", (e: any) => {
             Game</button>
         <Alert message="Connecting to the server..." v-if="ws == null && joined">
         </Alert>
-        <Question :question="question" v-if="question != ''" 
-            :answer="answer" :host="host" :duration="duration"
-            :answeringPlayer="answeringPlayer" :responsesClosed="responsesClosed" :spectator="spectator">
+        <Question :question="question" v-if="question != ''" :answer="answer" :host="host" :duration="duration"
+            :answeringPlayer="answeringPlayer" :responsesClosed="responsesClosed" :spectator="spectator"
+            :responsesOpen="openResponses">
         </Question>
-        <Owari v-if="owari" :category="owari" :prompt="owariPrompt" :answers="owariAnswers"
-            :bids="owariBids" :money="yourMoney" :host="host">
+        <Owari v-if="owari" :category="owari" :prompt="owariPrompt" :answers="owariAnswers" :bids="owariBids"
+            :money="yourMoney" :host="host">
         </Owari>
         <Auth :host="host" v-if="!joined" :spectator="spectator">
         </Auth>

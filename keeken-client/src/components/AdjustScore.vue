@@ -37,16 +37,17 @@ defineExpose({
 
 <template>
   <dialog class="modal" id="adjustScoreModal" tabindex="-1" role="dialog" data-backdrop="static" ref="adjustScoreModal">
-    <div class="modal-box" role="document" style="max-width: 95vw">
-      <div class="modal-content">
+    <div class="modal-box border-4 border-secondary" role="document">
+      <div class="flex flex-col gap-4">
         <div class="modal-header">
-          <h5 class="modal-title">Adjust Score for {{ player }}</h5>
+          <div class="border-b-2 border-primary text-3xl p-3">Adjust Score for {{ player }}</div>
         </div>
-        <div class="modal-body">
-            <label for="scoreAdjustment">Score Adjustment Amount:</label>
-            <input type="number" id="scoreAdjustment" name="scoreAdjustment" v-model="amountField" />
+        <div class="my-4 text-center">
+            <label for="scoreAdjustment" class="input text-lg w-6/7"><span class="label">Score Adjustment Amount:</span>
+              <input type="number" class="input-lg" id="scoreAdjustment" name="scoreAdjustment" v-model="amountField" />
+            </label>
         </div>
-        <div class="modal-footer">
+        <div class="flex flex-row justify-end gap-4 mt-4">
           <button type="button" class="btn btn-info" @click="sendAdjustScore()">Submit</button>
           <button type="button" class="btn btn-secondary" @click="(adjustScoreModal! as any).close()">Close</button>
         </div>

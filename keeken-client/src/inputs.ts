@@ -4,6 +4,14 @@ function keypressHandler(e: KeyboardEvent) {
     if (e.code === "Space") {
         eventBus.emit("spacePress");
     }
+
+    if (e.code === "KeyY") {
+        eventBus.emit("markCorrect");
+    }
+
+    if (e.code === "KeyN") {
+        eventBus.emit("markIncorrect");
+    }
 }
 
 function touchStartHandler() {

@@ -20,6 +20,7 @@ type Events = {
     "hideBid"?: null,
     "openAdjustScore"?: string,
     "adjustScore": { playerName: string; amount: number },
+    "startGame"?: null,
 };
 
 const eventBus = mitt<Events>();

@@ -14,6 +14,7 @@ import Auth from './Auth.vue';
 import GameControls from './GameControls.vue';
 import { useRoute } from 'vue-router';
 import { setListeners } from '@/inputs';
+import MobileGameboard from './MobileGameboard.vue';
 
 const ws = ref<WebSocket | null>(null);
 const joined = ref(false);
@@ -58,11 +59,6 @@ const wsMessageListener = (rawMessage: any) => {
     console.log(msg);
 
     if (msg["Type"] == "BoardOverview") {
-        if (msg["Data"].Round == "3") {
-            // Owari round
-            board.value = null;
-            return;
-        }
         board.value = msg["Data"];
     }
     if (msg["Type"] == "QuestionPrompt") {
@@ -220,6 +216,7 @@ eventBus.on("submitBid", sendBid);
 eventBus.on("submitAnswer", sendOwariAnswer);
 eventBus.on("authReady", join);
 eventBus.on("adjustScore", sendAdjustScore);
+eventBus.on("startGame", sendStartGame);
 
 eventBus.on("openAdjustScore", (e: any) => {
     adjustScoreComponent.value?.open(e as string);
@@ -235,12 +232,12 @@ eventBus.on("openAdjustScore", (e: any) => {
         </div>
         <Gameheader v-if="ws" :hostName="hostPlayerName" :board="board" :host="host" :started="!!board">
         </Gameheader>
-        <Gameboard v-if="board" :board="board" :host="host">
+        <Gameboard v-if="board && $matches.lg!.min" :board="board" :host="host">
         </Gameboard>
+        <MobileGameboard v-if="board && $matches.md!.max" :board="board" :host="host">
+        </MobileGameboard>
         <Alert message="Waiting for the host to start the game..." v-if="!board && joined">
         </Alert>
-        <button v-if="joined && host && !board" type="button" class="btn btn-success" @click="sendStartGame">Start
-            Game</button>
         <Alert message="Connecting to the server..." v-if="ws == null && joined">
         </Alert>
         <Question :question="question" v-if="question != ''" :answer="answer" :host="host" :duration="duration"
@@ -258,7 +255,7 @@ eventBus.on("openAdjustScore", (e: any) => {
         </PlayerList>
         <AdjustScore :player="''" v-if="host && !!board" ref="adjustScoreComponent">
         </AdjustScore>
-        <GameControls v-if="host" :host="host" :started="!!board" :board="board">
+        <GameControls v-if="host" :host="host" :started="!!board" :board="board" :joined="joined">
         </GameControls>
     </div>
 </template>

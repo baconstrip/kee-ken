@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import eventBus from '../eventbus';
 
 const { board, host } = defineProps<{
@@ -33,11 +33,11 @@ const rows = computed(() => {
 
 <template>
   <div class="w-full">
-    <div class="" id="gameboard" v-if="board">
+    <div class="" id="gameboard" v-if="board && board.Round != '3'">
       <div class="overflow-hidden rounded-3xl border-4 border-primary/40 bg-primary-content/70 shadow-2xl">
         <div class="grid grid-cols-6 border-b-4 border-primary/40 bg-primary-content/50">
           <div v-for="category in board.Categories" class="border-r-4 border-primary/40 p-4 last:border-r-0 md:p-6">
-            <h2 class="text-center text-lg font-bold uppercase tracking-wide text-primary hyphens-auto text-pretty ">
+            <h2 class="text-center text-2xl font-bold uppercase tracking-wide text-primary wrap-break-word">
               {{ category.Name }}
             </h2>
           </div>

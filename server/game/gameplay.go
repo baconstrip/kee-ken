@@ -106,6 +106,9 @@ func (g *GameDriver) sendOwari() {
 	for name := range g.metagame.players {
 		g.sendOwariPlayer(name)
 	}
+
+	overview := server.EncodeServerMessage(g.gameState.Boards[common.OWARI-1].Snapshot().ToBoardOverview())
+	g.server.MessageAll(overview)
 }
 
 func (g *GameDriver) showOwariPromptHost() {
@@ -536,8 +539,6 @@ func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg 
 		return nil
 	}
 
-	g.gameState.currentStatus = STATUS_SHOWING_OWARI
-
 	ans := msg.Data.(*message.FreeformAnswer).Message
 	g.owariState.answers[name] = ans
 	// Check to see if all answers are in.
@@ -548,6 +549,7 @@ func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg 
 			continue
 		}
 		if _, ok := g.owariState.answers[n]; !ok {
+			log.Printf("Still waiting on answer from %v", n)
 			found = false
 		}
 	}
@@ -555,6 +557,8 @@ func (g *GameDriver) OnFreeformAnswerAddAnswerOwari(name string, host bool, msg 
 	if !found {
 		return nil
 	}
+
+	g.gameState.currentStatus = STATUS_SHOWING_OWARI
 	log.Printf("All answers are in")
 
 	g.showOwariAnswers()

@@ -20,8 +20,8 @@ import NavCard from '@/components/NavCard.vue';
         <span class="text text-gray-300">An open-source trivia platform for hosting and playing quiz games.</span>
       </div>
       <div class="mt-8 mx-auto row text-center">
-        <div role="alert" class="mx-auto w-[100%] alert alert-info alert-soft justify-center hidden md:block">
-          <div class="text-2xl mx-auto w-full">Select an option below to start playing!</div>
+        <div role="alert" class="mx-auto w-[100%] max-w-[700px] text-center alert alert-info alert-soft justify-center hidden md:block">
+          <div class="text-2xl mx-auto">Select an option below to start playing!</div>
         </div>
       </div>
 

@@ -28,7 +28,7 @@ const cardClasses = computed(() => {
 </script>
 
 <template>
-  <div :class="cardClasses">
+  <div :class="cardClasses" class="col-span-4 md:col-span-1 mx-auto w-full">
     <div class="card-body">
       <div class="card-title justify-center">
         <slot name="icon"></slot>

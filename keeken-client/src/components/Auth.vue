@@ -40,30 +40,42 @@ const sendAuth = () => {
 </script>
 
 <template>
-  <div class="container">
-    <Alert :message="serverError" v-if="serverError">
-    </Alert>
-    <form class="login-form">
-      <div class="form-group">
-        <label for="name-field">Name</label>
-        <input type="name" class="form-control" id="name-field" placeholder="Pick a name" v-model="nameField">
+  <div class="h-full max-w-screen flex items-center">
+    <div class="m-auto grid gap-4 md:mx-auto mx-4 md:max-w-[600px] border-4 border-primary/40 bg-primary-content/50 rounded-xl p-4 md:p-8 shadow-2xl">
+      <div class="text-3xl font-bold text-center text-secondary mb-4">
+        <span>
+          <template v-if="host">Join as Host</template>
+          <template v-else-if="spectator">Join as a Spectator</template>
+          <template v-else>Join Game!</template>
+        </span>
       </div>
-      <div class="form-group" v-if="host">
-        <label for="server-passcode" class="text-4xl">Server Passcode</label>
-        <input type="server-passcode" class="form-control" id="server-passcode" placeholder="Server Passcode" v-model="serverPasscodeField">
-        <small class="form-text text-muted">
-          This was the passcode you set the server up with.
-        </small>
-      </div>
-      <div class="form-group" v-else>
-        <label for="passcode">Passcode</label>
-        <input type="passcode" class="form-control" id="passcode" placeholder="Some passcode" v-model="passcodeField">
-        <small class="form-text text-muted">
-          Please do not use a real password here. This is just a passcode for the game, and may be shared with the
-          server owner.
-        </small>
-      </div>
-      <button type="button" class="btn btn-success" @click="sendAuth()">Join Up!</button>
-    </form>
+      <Alert :message="serverError" v-if="serverError">
+      </Alert>
+      <form class="login-form grid gap-4">
+        <label class="label text-base-content">Display Name
+          <input type="name" class="form-control" id="name-field" placeholder="Pick a name" v-model="nameField"></input>
+        </label>
+        <div class="w-full border-primary/40 border-2 rounded-md p-4 flex flex-col" v-if="host">
+          <label class="label">Server Passcode
+          <input type="server-passcode" class="form-control" id="server-passcode" placeholder="Server Passcode"
+            v-model="serverPasscodeField"></input>
+          </label>
+          <div class="mt-4 text-sm text-base-content/70">
+            This is the password that the server was set up with.
+          </div>
+        </div>
+        <div class="form-group" v-else>
+          <label class="label text-base-content">Passcode
+            <input type="passcode" class="form-control" id="passcode" placeholder="Some passcode" v-model="passcodeField">
+            </input>
+          </label>
+          <div class="mt-4 text-sm text-base-content/70">
+            Please do not use a real password here. This is just a passcode for the game, and may be shared with the
+            server owner.
+          </div>
+        </div>
+        <button type="button" class="btn btn-success" @click="sendAuth()">Join Up!</button>
+      </form>
+    </div>
   </div>
 </template>

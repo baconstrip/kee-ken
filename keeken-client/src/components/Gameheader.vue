@@ -33,7 +33,7 @@ const hostdisplay = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-7xl flex-1">
+  <div class="mx-auto w-full max-w-7xl">
     <div class="mb-8 flex items-center justify-between gap-6 rounded-lg border border-primary/30 bg-primary-content/70 px-6 py-4 backdrop-blur-sm md:px-8 md:py-5 mt-6">
       <div class="flex items-center gap-3">
         <div class="h-2 w-2 animate-pulse rounded-full bg-accent"></div>

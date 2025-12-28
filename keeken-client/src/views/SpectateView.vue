@@ -3,7 +3,5 @@ import client from '@/components/Client.vue';
 </script>
 
 <template>
-  <main>
-    <client :host="false" :spectator="true"></client>
-  </main>
+  <client :host="false" :spectator="true"></client>
 </template>

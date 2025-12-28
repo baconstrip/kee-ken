@@ -5,12 +5,11 @@ import NavCard from '@/components/NavCard.vue';
 </script>
 
 <template>
-  <main>
     <div class="mt-10"></div>
     <div>
-      <div class="row text-center">
+      <div class="row text-center mx-6 md:mx-0">
         <div class="bg-white rounded-[6rem] w-fit px-6 mx-auto fade-out-radial">
-          <img src="/kiken_writing.png" alt="KeeKen Logo" class="mx-auto my-5 h-80" />
+          <img src="/kiken_writing.png" alt="KeeKen Logo" class="mx-auto my-5 md:h-80 h-40" />
         </div>
       </div>
 
@@ -21,7 +20,7 @@ import NavCard from '@/components/NavCard.vue';
         <span class="text text-gray-300">An open-source trivia platform for hosting and playing quiz games.</span>
       </div>
       <div class="mt-8 mx-auto row text-center">
-        <div role="alert" class="mx-auto w-[100%] alert alert-info alert-soft justify-center">
+        <div role="alert" class="mx-auto w-[100%] alert alert-info alert-soft justify-center hidden md:block">
           <div class="text-2xl mx-auto w-full">Select an option below to start playing!</div>
         </div>
       </div>
@@ -30,7 +29,7 @@ import NavCard from '@/components/NavCard.vue';
     <div class="mt-10"></div>
     <div class="row text-center">
       <div class="col">
-        <div class="flex flex-row justify-center">
+        <div class="grid grid-cols-3 justify-center gap-4 content-center">
           <NavCard btntext="Launch Client" link="/player" color="primary">
             <template #icon>
               <fa-icon icon="fa-solid fa-gamepad"></fa-icon>
@@ -42,7 +41,7 @@ import NavCard from '@/components/NavCard.vue';
               <p class="mt-2">Join the game as a player and compete against others!</p>
             </template>
           </NavCard>
-          <NavCard btntext="Become Host" link="/host" color="accent" v-if="$matches.md!.min">
+          <NavCard btntext="Become Host" link="/host" color="secondary" v-if="$matches.md!.min">
             <template #icon>
               <fa-icon icon="fa-solid fa-user-tie"></fa-icon>
             </template>
@@ -53,7 +52,8 @@ import NavCard from '@/components/NavCard.vue';
               <p class="mt-2">Host your own game of Kee-ken</p>
             </template>
           </NavCard>
-          <NavCard btntext="Launch Editor" link="/editor" color="error" v-if="$matches.lg!.min">
+          <!-- Disable editor for the time being -->
+          <!-- <NavCard btntext="Launch Editor" link="/editor" color="error" v-if="$matches.lg!.min">
             <template #icon>
               <fa-icon icon="fa-solid fa-edit"></fa-icon>
             </template>
@@ -63,7 +63,7 @@ import NavCard from '@/components/NavCard.vue';
             <template #description>
               <p class="mt-2">Create and edit question sets for your games!</p>
             </template>
-          </NavCard>
+          </NavCard> -->
           <NavCard btntext="Spectate" link="/spectate" color="accent">
             <template #icon>
               <fa-icon icon="fa-solid fa-eye"></fa-icon>
@@ -87,7 +87,6 @@ import NavCard from '@/components/NavCard.vue';
         </div>
       </div>
     </div>
-  </main>
 </template>
 
 <style lang="postcss" scoped>

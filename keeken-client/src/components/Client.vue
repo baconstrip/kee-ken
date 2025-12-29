@@ -126,7 +126,10 @@ const wsMessageListener = (rawMessage: any) => {
 };
 
 const join = () => {
-    ws.value = new WebSocket('ws://' + window.location.host + '/ws/game');
+    let secured = window.location.protocol == "https:";
+    let protocol = secured ? "wss://" : "ws://";
+
+    ws.value = new WebSocket(protocol + window.location.host + '/ws/game');
     ws.value.onopen = function (e) {
         joined.value = true;
         errorMessages.value = "";

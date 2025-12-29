@@ -12,8 +12,11 @@ const { board } = defineProps<{
 }>();
 
 const join = () => {
+    let secured = window.location.protocol == "https:";
+    let protocol = secured ? "wss://" : "ws://";
+
+    ws.value = new WebSocket(protocol + window.location.host + '/ws/editor');
     //$("#connect-button").addClass("d-none");
-    ws.value = new WebSocket('ws://' + window.location.host + '/ws/editor');
     ws.value.onopen = function (e) {
         joined.value = true;
         errorMessages.value = "";

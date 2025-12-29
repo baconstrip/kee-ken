@@ -18,6 +18,12 @@ library.add(fas, far, fab)
 
 const app = createApp(App)
 
+try {
+  const wakeLock = await navigator.wakeLock.request("screen");
+} catch (err: any) {
+  console.log(`${err.name}, ${err.message}`);
+}
+
 app.component('fa-icon', FontAwesomeIcon)
 
 app.use(createPinia())
@@ -25,3 +31,4 @@ app.use(VueResponsiveness, Presets.Tailwind_CSS)
 app.use(router)
 
 app.mount('#app')
+
